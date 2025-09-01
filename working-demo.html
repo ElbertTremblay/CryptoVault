@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>🎉 Working CryptoVault Demo</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 20px; 
+            margin: 0; 
+            text-align: center;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            padding: 40px; 
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .success { 
+            background: rgba(40,167,69,0.3); 
+            border: 2px solid #28a745; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin: 20px 0;
+        }
+        .links { 
+            display: flex; 
+            gap: 20px; 
+            justify-content: center; 
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        .link-btn { 
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white; 
+            text-decoration: none;
+            padding: 15px 30px; 
+            border-radius: 10px; 
+            font-size: 18px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+        .link-btn:hover { 
+            transform: translateY(-3px); 
+            text-decoration: none;
+            color: white;
+        }
+        .status { 
+            background: rgba(0,123,255,0.2); 
+            border: 2px solid #007bff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 MetaMask连接成功！</h1>
+        
+        <div class="success">
+            <h2>✅ 问题已解决</h2>
+            <p><strong>原因：</strong> 端口3023有待处理的MetaMask请求</p>
+            <p><strong>解决：</strong> 使用端口3024，MetaMask弹窗正常工作</p>
+        </div>
+        
+        <div class="status">
+            <h3>🔗 当前状态</h3>
+            <p><strong>端口：</strong> 3024 (正常工作)</p>
+            <p><strong>MetaMask：</strong> 连接和交易弹窗正常</p>
+            <p><strong>账户：</strong> 0x5b37...b910 (已连接)</p>
+        </div>
+        
+        <h2>🚀 现在可以使用的功能：</h2>
+        
+        <div class="links">
+            <a href="http://localhost:3024/demo.html" class="link-btn">
+                🏛️ CryptoVault 完整应用
+            </a>
+            
+            <a href="http://localhost:3024/test.html" class="link-btn">
+                🔧 简单连接测试
+            </a>
+        </div>
+        
+        <div style="background: rgba(255,193,7,0.2); border: 2px solid #ffc107; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3>📋 完整投资流程测试：</h3>
+            <ol style="text-align: left; max-width: 500px; margin: 0 auto;">
+                <li>访问 CryptoVault 完整应用</li>
+                <li>点击"连接钱包"按钮</li>
+                <li>在MetaMask弹窗中点击"连接"</li>
+                <li>选择任意项目点击"私密投资"</li>
+                <li>输入投资金额 (建议0.001 ETH)</li>
+                <li>点击"私密投资"确认</li>
+                <li>在MetaMask弹窗中确认交易</li>
+                <li>等待交易完成</li>
+            </ol>
+        </div>
+        
+        <div style="background: rgba(220,53,69,0.2); border: 2px solid #dc3545; padding: 15px; border-radius: 8px;">
+            <h3>⚠️ 重要提醒</h3>
+            <p>端口3023仍有待处理请求问题</p>
+            <p>请使用端口3024进行所有测试</p>
+        </div>
+    </div>
+
+    <script>
+        // 检查MetaMask状态
+        window.onload = async function() {
+            if (window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({method: 'eth_accounts'});
+                    if (accounts.length > 0) {
+                        console.log('✅ MetaMask connected:', accounts[0]);
+                    }
+                } catch (e) {
+                    console.log('MetaMask status check failed');
+                }
+            }
+        };
+    </script>
+</body>
+</html>

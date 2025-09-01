@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoVault - MetaMask集成测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            max-width: 400px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-effect p-8 max-w-md w-full text-center">
+            <h1 class="text-3xl font-bold text-white mb-6">CryptoVault MetaMask 测试</h1>
+            
+            <!-- 钱包状态 -->
+            <div class="mb-6 p-4 glass-effect rounded-lg">
+                <h3 class="text-white font-semibold mb-2">钱包状态</h3>
+                <div id="walletStatus" class="text-white/80 text-sm">未连接</div>
+                <div id="walletAddress" class="text-white/60 text-xs mt-1"></div>
+                <div id="walletBalance" class="text-white/60 text-xs mt-1"></div>
+                <div id="networkInfo" class="text-white/60 text-xs mt-1"></div>
+            </div>
+            
+            <!-- 连接按钮 -->
+            <button id="connectBtn" onclick="connectWallet()" class="btn-primary w-full mb-4">
+                连接 MetaMask
+            </button>
+            
+            <!-- 测试按钮 -->
+            <div class="space-y-3">
+                <button id="testInvestBtn" onclick="testInvestment()" class="btn-secondary w-full" disabled>
+                    测试投资交易 (0.001 ETH)
+                </button>
+                
+                <button id="testSwapBtn" onclick="testSwap()" class="btn-secondary w-full" disabled>
+                    测试交换交易 (0.001 ETH)
+                </button>
+                
+                <button onclick="checkEthereum()" class="btn-primary w-full">
+                    检查 Ethereum 对象
+                </button>
+            </div>
+            
+            <!-- 日志区域 -->
+            <div class="mt-6 p-4 glass-effect rounded-lg">
+                <h3 class="text-white font-semibold mb-2">调试日志</h3>
+                <div id="debugLog" class="text-white/70 text-xs text-left max-h-40 overflow-y-auto">
+                    等待操作...
+                </div>
+                <button onclick="clearLog()" class="text-white/50 text-xs mt-2">清空日志</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let provider = null;
+        let signer = null;
+        let userAddress = '';
+        let isConnected = false;
+
+        // 日志函数
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('debugLog');
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '日志已清空<br>';
+        }
+
+        // 通知函数
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 
+                           type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            
+            notification.className = `notification ${bgColor} text-white p-4 rounded-lg shadow-lg`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // 检查 Ethereum 对象
+        function checkEthereum() {
+            log('开始检查 Ethereum 对象...');
+            
+            if (typeof window.ethereum === 'undefined') {
+                log('❌ window.ethereum 不存在 - MetaMask 未安装');
+                showNotification('MetaMask 未检测到，请安装 MetaMask 浏览器扩展', 'error');
+                return false;
+            }
+            
+            log('✅ window.ethereum 存在');
+            log(`Ethereum 版本: ${window.ethereum.networkVersion || 'unknown'}`);
+            log(`是否为 MetaMask: ${window.ethereum.isMetaMask ? 'Yes' : 'No'}`);
+            log(`连接状态: ${window.ethereum.isConnected() ? 'Connected' : 'Disconnected'}`);
+            
+            if (window.ethereum.selectedAddress) {
+                log(`当前地址: ${window.ethereum.selectedAddress}`);
+            }
+            
+            return true;
+        }
+
+        // 更新UI状态
+        function updateUI() {
+            const connectBtn = document.getElementById('connectBtn');
+            const testInvestBtn = document.getElementById('testInvestBtn');
+            const testSwapBtn = document.getElementById('testSwapBtn');
+            const statusDiv = document.getElementById('walletStatus');
+            const addressDiv = document.getElementById('walletAddress');
+            const balanceDiv = document.getElementById('walletBalance');
+            const networkDiv = document.getElementById('networkInfo');
+            
+            if (isConnected && userAddress) {
+                connectBtn.textContent = '断开连接';
+                testInvestBtn.disabled = false;
+                testSwapBtn.disabled = false;
+                statusDiv.textContent = '已连接';
+                addressDiv.textContent = `地址: ${userAddress.substring(0, 6)}...${userAddress.substring(userAddress.length - 4)}`;
+                
+                // 获取余额
+                if (provider) {
+                    provider.getBalance(userAddress).then(balance => {
+                        const ethBalance = (parseFloat(balance) / 1e18).toFixed(4);
+                        balanceDiv.textContent = `余额: ${ethBalance} ETH`;
+                    });
+                    
+                    // 获取网络信息
+                    provider.getNetwork().then(network => {
+                        networkDiv.textContent = `网络: ${network.name} (Chain ID: ${network.chainId})`;
+                    });
+                }
+            } else {
+                connectBtn.textContent = '连接 MetaMask';
+                testInvestBtn.disabled = true;
+                testSwapBtn.disabled = true;
+                statusDiv.textContent = '未连接';
+                addressDiv.textContent = '';
+                balanceDiv.textContent = '';
+                networkDiv.textContent = '';
+            }
+        }
+
+        // 连接钱包函数
+        async function connectWallet() {
+            log('开始连接钱包流程...');
+            
+            if (isConnected) {
+                // 断开连接
+                log('断开钱包连接');
+                isConnected = false;
+                provider = null;
+                signer = null;
+                userAddress = '';
+                updateUI();
+                showNotification('钱包已断开连接', 'info');
+                return;
+            }
+            
+            // 检查 MetaMask
+            if (!checkEthereum()) {
+                return;
+            }
+            
+            try {
+                log('请求账户访问权限...');
+                
+                // 请求连接
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                log(`获到账户: ${accounts.length} 个`);
+                log(`主账户: ${accounts[0]}`);
+                
+                if (accounts.length === 0) {
+                    throw new Error('没有找到账户');
+                }
+                
+                // 初始化 provider 和 signer
+                log('初始化 Ethers.js provider...');
+                provider = new ethers.BrowserProvider(window.ethereum);
+                
+                log('获取 signer...');
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                log(`Signer 地址: ${userAddress}`);
+                
+                isConnected = true;
+                updateUI();
+                
+                log('✅ 钱包连接成功！');
+                showNotification('MetaMask 连接成功！', 'success');
+                
+                // 设置事件监听器
+                window.ethereum.on('accountsChanged', handleAccountsChanged);
+                window.ethereum.on('chainChanged', handleChainChanged);
+                window.ethereum.on('disconnect', handleDisconnect);
+                
+            } catch (error) {
+                log(`❌ 连接失败: ${error.message}`);
+                console.error('连接钱包失败:', error);
+                showNotification(`连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试投资交易
+        async function testInvestment() {
+            if (!isConnected || !signer) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+            
+            try {
+                log('准备发送投资交易...');
+                showNotification('请在 MetaMask 中确认投资交易...', 'info');
+                
+                const transaction = {
+                    to: '0x742d35Cc6635C0532925a3b8D06080f0Ec0BAff5', // 测试地址
+                    value: ethers.parseEther('0.001'), // 0.001 ETH
+                    gasLimit: 21000
+                };
+                
+                log(`交易详情: to=${transaction.to}, value=${ethers.formatEther(transaction.value)} ETH`);
+                
+                // 发送交易
+                log('调用 signer.sendTransaction()...');
+                const txResponse = await signer.sendTransaction(transaction);
+                
+                log(`✅ 交易已发送! Hash: ${txResponse.hash}`);
+                showNotification(`交易已提交！Hash: ${txResponse.hash.substring(0, 10)}...`, 'info');
+                
+                log('等待交易确认...');
+                const receipt = await txResponse.wait();
+                
+                if (receipt.status === 1) {
+                    log('✅ 交易确认成功！');
+                    showNotification('🎉 投资交易成功确认！', 'success');
+                } else {
+                    log('❌ 交易失败');
+                    showNotification('交易失败', 'error');
+                }
+                
+                updateUI(); // 更新余额
+                
+            } catch (error) {
+                log(`❌ 投资交易失败: ${error.message}`);
+                console.error('投资交易失败:', error);
+                
+                let errorMessage = '投资交易失败';
+                if (error.code === 4001) {
+                    errorMessage = '用户取消了交易';
+                } else if (error.code === -32603) {
+                    errorMessage = '交易被拒绝';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                showNotification(errorMessage, 'error');
+            }
+        }
+
+        // 测试交换交易
+        async function testSwap() {
+            if (!isConnected || !signer) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+            
+            try {
+                log('准备发送交换交易...');
+                showNotification('请在 MetaMask 中确认交换交易...', 'info');
+                
+                const transaction = {
+                    to: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI 代币地址
+                    value: ethers.parseEther('0.001'),
+                    gasLimit: 50000
+                };
+                
+                log(`交易详情: to=${transaction.to}, value=${ethers.formatEther(transaction.value)} ETH`);
+                
+                const txResponse = await signer.sendTransaction(transaction);
+                
+                log(`✅ 交易已发送! Hash: ${txResponse.hash}`);
+                showNotification(`交易已提交！Hash: ${txResponse.hash.substring(0, 10)}...`, 'info');
+                
+                const receipt = await txResponse.wait();
+                
+                if (receipt.status === 1) {
+                    log('✅ 交易确认成功！');
+                    showNotification('🎉 交换交易成功确认！', 'success');
+                } else {
+                    log('❌ 交易失败');
+                    showNotification('交易失败', 'error');
+                }
+                
+                updateUI();
+                
+            } catch (error) {
+                log(`❌ 交换交易失败: ${error.message}`);
+                console.error('交换交易失败:', error);
+                
+                let errorMessage = '交换交易失败';
+                if (error.code === 4001) {
+                    errorMessage = '用户取消了交易';
+                }
+                
+                showNotification(errorMessage, 'error');
+            }
+        }
+
+        // 事件处理器
+        function handleAccountsChanged(accounts) {
+            log(`账户变更: ${accounts.length} 个账户`);
+            if (accounts.length === 0) {
+                isConnected = false;
+                provider = null;
+                signer = null;
+                userAddress = '';
+                showNotification('账户已断开', 'info');
+            } else {
+                log('重新连接新账户...');
+                connectWallet();
+            }
+            updateUI();
+        }
+
+        function handleChainChanged(chainId) {
+            log(`网络变更: Chain ID ${chainId}`);
+            showNotification(`网络已切换到 Chain ID: ${chainId}`, 'info');
+            // 重新加载页面或重新连接
+            window.location.reload();
+        }
+
+        function handleDisconnect(error) {
+            log(`连接断开: ${error ? error.message : '未知原因'}`);
+            isConnected = false;
+            provider = null;
+            signer = null;
+            userAddress = '';
+            updateUI();
+            showNotification('MetaMask 连接已断开', 'info');
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', async () => {
+            log('页面加载完成，初始化...');
+            
+            // 检查是否已经连接
+            if (window.ethereum && window.ethereum.selectedAddress) {
+                log(`检测到已连接地址: ${window.ethereum.selectedAddress}`);
+                // 自动重连
+                try {
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    signer = await provider.getSigner();
+                    userAddress = await signer.getAddress();
+                    isConnected = true;
+                    log('自动重连成功');
+                } catch (error) {
+                    log(`自动重连失败: ${error.message}`);
+                }
+            }
+            
+            updateUI();
+            log('初始化完成');
+        });
+        
+        // 动态加载 Ethers.js
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js';
+        script.onload = () => {
+            log('Ethers.js 库加载完成');
+        };
+        script.onerror = () => {
+            log('❌ Ethers.js 库加载失败');
+            showNotification('Ethers.js 库加载失败', 'error');
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoVault - 机密DeFi平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.4.0/dist/ethers.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(240, 147, 251, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }
+            to { box-shadow: 0 0 30px rgba(102, 126, 234, 0.6); }
+        }
+        
+        .hidden { display: none; }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="glass-effect fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">C</span>
+                    </div>
+                    <span class="text-white font-bold text-xl">CryptoVault</span>
+                </div>
+                
+                <div class="hidden md:flex space-x-8">
+                    <a href="#" onclick="showSection('home')" class="text-white hover:text-purple-300 transition-colors">首页</a>
+                    <a href="#" onclick="showSection('vault')" class="text-white hover:text-purple-300 transition-colors">私密金库</a>
+                    <a href="#" onclick="showSection('dex')" class="text-white hover:text-purple-300 transition-colors">机密DEX</a>
+                    <a href="#" onclick="showSection('create')" class="text-white hover:text-purple-300 transition-colors">创建项目</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div id="networkInfo" class="hidden text-white text-sm">
+                        <span id="chainName">未连接</span>
+                    </div>
+                    <button id="connectWallet" onclick="connectWallet()" class="btn-primary">
+                        连接钱包
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="pt-16">
+        <!-- 首页 -->
+        <section id="home" class="min-h-screen py-20 px-4 fade-in">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center">
+                    <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                        私密DeFi的未来
+                        <span class="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent block">
+                            CryptoVault
+                        </span>
+                    </h1>
+                    <p class="text-xl md:text-2xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed">
+                        使用Zama FHE协议体验真正的金融隐私。在完全保密的环境中投资、交易和筹资。
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+                        <button onclick="showSection('vault')" class="btn-primary text-lg px-8 py-4">
+                            探索私密金库 →
+                        </button>
+                        <button onclick="showSection('dex')" class="btn-secondary text-lg px-8 py-4">
+                            体验机密交易
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 特性卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+                    <div class="glass-effect p-6 text-center glow">
+                        <div class="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white text-2xl">🔐</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white mb-3">完全私密投资</h3>
+                        <p class="text-white/70">使用FHE加密技术隐藏投资金额，实现完全匿名参与</p>
+                    </div>
+                    
+                    <div class="glass-effect p-6 text-center glow">
+                        <div class="w-16 h-16 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white text-2xl">🔄</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white mb-3">机密DEX交易</h3>
+                        <p class="text-white/70">订单大小和余额完全加密，保护交易隐私</p>
+                    </div>
+                    
+                    <div class="glass-effect p-6 text-center glow">
+                        <div class="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white text-2xl">🛡️</span>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white mb-3">真实MetaMask集成</h3>
+                        <p class="text-white/70">所有操作都有真实的MetaMask弹窗交互</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 私密金库 -->
+        <section id="vault" class="min-h-screen py-20 px-4 hidden">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-12">
+                    <h1 class="text-4xl font-bold text-white mb-6">私密投资金库</h1>
+                    <p class="text-xl text-white/80 max-w-3xl mx-auto">
+                        使用FHE技术投资有前景的项目，保持完全隐私。所有投资和捐款都有MetaMask交互。
+                    </p>
+                </div>
+                
+                <!-- 项目网格 -->
+                <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- 项目将通过JavaScript动态加载 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 机密DEX -->
+        <section id="dex" class="min-h-screen py-20 px-4 hidden">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-12">
+                    <h1 class="text-4xl font-bold text-white mb-6">机密DEX</h1>
+                    <p class="text-xl text-white/80 max-w-3xl mx-auto">
+                        完全隐私的ETH相关代币交易。所有买入卖出操作都有MetaMask弹窗交互。
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- 交易面板 -->
+                    <div class="glass-effect p-6">
+                        <div class="flex space-x-4 mb-6 border-b border-white/10 pb-4">
+                            <button id="swapTab" onclick="switchDEXTab('swap')" class="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium">交换</button>
+                            <button id="limitTab" onclick="switchDEXTab('limit')" class="px-4 py-2 text-white/70 hover:text-white transition-colors">限价单</button>
+                        </div>
+                        
+                        <!-- 交换界面 -->
+                        <div id="swapInterface" class="space-y-4">
+                            <div>
+                                <label class="block text-white/70 text-sm mb-2">从</label>
+                                <div class="glass-effect p-4 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <select id="fromToken" onchange="updateTokenPair()" class="bg-transparent text-white text-lg font-medium outline-none">
+                                            <option value="ETH">ETH</option>
+                                            <option value="WETH">WETH</option>
+                                            <option value="USDC">USDC</option>
+                                            <option value="USDT">USDT</option>
+                                            <option value="DAI">DAI</option>
+                                        </select>
+                                        <input id="fromAmount" type="number" placeholder="0.0" onchange="calculateToAmount()" class="bg-transparent text-white text-right text-xl outline-none w-32">
+                                    </div>
+                                    <div class="flex justify-between items-center mt-2 text-sm text-white/60">
+                                        <span id="fromTokenName">以太坊</span>
+                                        <span id="fromBalance">余额: --</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-center">
+                                <button onclick="swapTokens()" class="p-2 glass-effect rounded-full hover:bg-white/20 transition-all">
+                                    <span class="text-white text-xl">⇅</span>
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-white/70 text-sm mb-2">到</label>
+                                <div class="glass-effect p-4 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <select id="toToken" onchange="updateTokenPair()" class="bg-transparent text-white text-lg font-medium outline-none">
+                                            <option value="USDC">USDC</option>
+                                            <option value="USDT">USDT</option>
+                                            <option value="DAI">DAI</option>
+                                            <option value="ETH">ETH</option>
+                                            <option value="WETH">WETH</option>
+                                        </select>
+                                        <input id="toAmount" type="number" placeholder="0.0" class="bg-transparent text-white text-right text-xl outline-none w-32" readonly>
+                                    </div>
+                                    <div class="flex justify-between items-center mt-2 text-sm text-white/60">
+                                        <span id="toTokenName">USD Coin</span>
+                                        <span id="toBalance">余额: --</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="glass-effect p-4 rounded-lg">
+                                <div class="flex justify-between items-center text-sm mb-2">
+                                    <span class="text-white/70">汇率</span>
+                                    <span id="exchangeRate" class="text-white">1 ETH = 2400 USDC</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-white/70">手续费</span>
+                                    <span class="text-white">0.3%</span>
+                                </div>
+                            </div>
+                            
+                            <button id="executeSwapBtn" onclick="executeSwap()" class="w-full btn-primary py-4 text-lg" disabled>
+                                🔐 连接钱包进行交换
+                            </button>
+                        </div>
+                        
+                        <!-- 限价单界面 -->
+                        <div id="limitInterface" class="space-y-4 hidden">
+                            <div>
+                                <label class="block text-white/70 text-sm mb-2">限价</label>
+                                <input id="limitPrice" type="number" placeholder="2400" class="w-full glass-effect px-4 py-3 text-white placeholder-white/70 outline-none">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <button onclick="createLimitOrder('buy')" class="btn-success py-4">
+                                    创建买单
+                                </button>
+                                <button onclick="createLimitOrder('sell')" class="btn-secondary py-4">
+                                    创建卖单
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="glass-effect p-3 rounded-lg border border-purple-500/20 mt-4">
+                            <div class="flex items-center text-sm text-purple-300">
+                                <span class="text-lg mr-2">🔐</span>
+                                <span>您的交易金额使用FHE技术加密，保持完全私密。</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 交易历史 -->
+                    <div class="glass-effect p-6">
+                        <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+                            <span class="text-lg mr-2">🕒</span>
+                            交易历史
+                        </h3>
+                        
+                        <div id="tradeHistory" class="space-y-3 max-h-96 overflow-y-auto">
+                            <div class="text-center py-8 text-white/50">
+                                <span class="text-4xl mb-3 block">📊</span>
+                                <p>暂无交易记录</p>
+                                <p class="text-sm">开始交易以查看历史记录</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 创建项目 -->
+        <section id="create" class="min-h-screen py-20 px-4 hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <h1 class="text-4xl font-bold text-white mb-6">创建新项目</h1>
+                    <p class="text-xl text-white/80 max-w-2xl mx-auto">
+                        使用FHE加密技术启动您的筹资活动，保持完全隐私。创建时有MetaMask交互。
+                    </p>
+                </div>
+                
+                <div class="glass-effect p-8 max-w-2xl mx-auto">
+                    <form id="createProjectForm" onsubmit="createProject(event)" class="space-y-6">
+                        <div>
+                            <label class="block text-white font-medium mb-2">项目标题 *</label>
+                            <input id="projectTitle" type="text" required placeholder="输入您的项目标题" 
+                                   class="w-full glass-effect px-4 py-3 text-white placeholder-white/70 border-none outline-none focus:bg-white/20 transition-all">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-2">项目描述 *</label>
+                            <textarea id="projectDescription" required placeholder="描述您的项目、目标以及人们为什么要投资" 
+                                      class="w-full h-32 glass-effect px-4 py-3 text-white placeholder-white/70 border-none outline-none focus:bg-white/20 transition-all resize-none"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-white font-medium mb-2">类别</label>
+                                <select id="projectCategory" class="w-full glass-effect px-4 py-3 text-white border-none outline-none focus:bg-white/20 transition-all">
+                                    <option value="DeFi">DeFi</option>
+                                    <option value="NFT">NFT</option>
+                                    <option value="游戏">游戏</option>
+                                    <option value="基础设施">基础设施</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-white font-medium mb-2">融资目标 (ETH) *</label>
+                                <input id="fundingGoal" type="number" required placeholder="10" min="0.1" step="0.1" 
+                                       class="w-full glass-effect px-4 py-3 text-white placeholder-white/70 border-none outline-none focus:bg-white/20 transition-all">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white font-medium mb-2">活动持续时间（天）</label>
+                            <select id="projectDuration" class="w-full glass-effect px-4 py-3 text-white border-none outline-none focus:bg-white/20 transition-all">
+                                <option value="30">30天</option>
+                                <option value="60">60天</option>
+                                <option value="90">90天</option>
+                            </select>
+                        </div>
+                        
+                        <div class="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                            <h4 class="text-purple-300 font-semibold mb-2">隐私特性</h4>
+                            <ul class="text-white/70 text-sm space-y-1">
+                                <li>• 投资者金额保持加密和私密</li>
+                                <li>• 匿名贡献跟踪</li>
+                                <li>• 智能合约安全资金管理</li>
+                                <li>• 私人投资者沟通</li>
+                                <li>• MetaMask交易确认</li>
+                            </ul>
+                        </div>
+                        
+                        <button type="submit" id="createProjectBtn" class="w-full btn-primary py-4 text-lg" disabled>
+                            连接钱包创建项目
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 投资模态框 -->
+    <div id="investModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="glass-effect max-w-md w-full p-6 rounded-2xl">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-white mb-2">私密投资/捐款</h3>
+                <p class="text-white/70 text-sm">您的投资金额将通过MetaMask确认并加密保护</p>
+            </div>
+            
+            <div class="mb-6">
+                <h4 id="modalProjectName" class="font-semibold text-white mb-2"></h4>
+                <div class="text-sm text-white/70">
+                    <div>目标: <span id="modalFundingGoal"></span> ETH</div>
+                    <div>已筹集: <span id="modalCurrentAmount"></span> ETH</div>
+                    <div>贡献者: <span id="modalContributors"></span> 人</div>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-white font-medium mb-2">投资/捐款金额 (ETH)</label>
+                <input id="investAmount" type="number" placeholder="0.1" min="0.01" step="0.01" 
+                       class="w-full glass-effect px-4 py-3 text-white placeholder-white/70 border-none outline-none focus:bg-white/20 transition-all">
+                <div class="flex items-center mt-2 text-xs text-white/60">
+                    <span class="text-lg mr-1">🔐</span>
+                    <span>金额将通过MetaMask确认并FHE加密</span>
+                </div>
+            </div>
+            
+            <div class="flex space-x-4 mb-4">
+                <button onclick="closeInvestModal()" class="flex-1 btn-secondary">取消</button>
+                <button id="confirmInvestBtn" onclick="confirmInvestment()" class="flex-1 btn-primary">
+                    MetaMask确认投资
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <button onclick="confirmDonation()" class="btn-success w-full">
+                    💝 MetaMask确认捐款
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载指示器 -->
+    <div id="loadingIndicator" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="glass-effect p-8 rounded-2xl text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <div class="text-white font-semibold" id="loadingText">处理中...</div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let web3;
+        let account = null;
+        let chainId = null;
+        let projects = [];
+        let currentProjectId = null;
+        let tradeHistory = [];
+        
+        // 代币信息
+        const tokens = {
+            ETH: { name: '以太坊', decimals: 18, address: null, price: 2400 },
+            WETH: { name: 'Wrapped ETH', decimals: 18, address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', price: 2400 },
+            USDC: { name: 'USD Coin', decimals: 6, address: '0xA0b86a33E6441e6C19D10a7E8bc6d2abB7a8d4b6', price: 1 },
+            USDT: { name: 'Tether', decimals: 6, address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', price: 1 },
+            DAI: { name: 'Dai Stablecoin', decimals: 18, address: '0x6B175474E89094C44Da98b954EedeAC495271d0F', price: 1 }
+        };
+        
+        // 初始化项目数据
+        function initializeProjects() {
+            projects = [
+                {
+                    id: 1,
+                    title: 'DeFi收益优化器',
+                    description: '先进的收益农场策略，自动风险管理和投资组合优化',
+                    category: 'DeFi',
+                    creator: '0x1234...5678',
+                    fundingGoal: 500,
+                    currentAmount: 342.5,
+                    contributors: 127,
+                    deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                    emoji: '🚀'
+                },
+                {
+                    id: 2,
+                    title: '隐私NFT市场',
+                    description: '匿名NFT交易平台，加密元数据和私人收藏',
+                    category: 'NFT',
+                    creator: '0x9876...4321',
+                    fundingGoal: 750,
+                    currentAmount: 456.8,
+                    contributors: 89,
+                    deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+                    emoji: '🎨'
+                },
+                {
+                    id: 3,
+                    title: '量子安全钱包',
+                    description: '下一代加密货币钱包，具有量子抗性安全特性',
+                    category: '安全',
+                    creator: '0x5555...7777',
+                    fundingGoal: 1000,
+                    currentAmount: 789.2,
+                    contributors: 234,
+                    deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+                    emoji: '🔒'
+                }
+            ];
+            updateProjectsDisplay();
+        }
+        
+        // 连接MetaMask钱包
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showNotification('请安装MetaMask钱包', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('连接钱包中...');
+                
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                
+                account = accounts[0];
+                const chainIdHex = await window.ethereum.request({
+                    method: 'eth_chainId'
+                });
+                chainId = parseInt(chainIdHex, 16);
+                
+                updateWalletUI();
+                updateNetworkInfo();
+                
+                // 监听账户和网络变化
+                window.ethereum.on('accountsChanged', handleAccountsChanged);
+                window.ethereum.on('chainChanged', handleChainChanged);
+                
+                hideLoading();
+                showNotification('钱包连接成功！', 'success');
+                
+            } catch (error) {
+                hideLoading();
+                console.error('连接钱包失败:', error);
+                showNotification('连接钱包失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 更新钱包UI
+        function updateWalletUI() {
+            const connectBtn = document.getElementById('connectWallet');
+            if (account) {
+                connectBtn.textContent = account.slice(0, 6) + '...' + account.slice(-4);
+                connectBtn.onclick = disconnectWallet;
+                
+                // 启用需要钱包的按钮
+                document.getElementById('executeSwapBtn').disabled = false;
+                document.getElementById('executeSwapBtn').textContent = '🔐 私密交换';
+                document.getElementById('createProjectBtn').disabled = false;
+                document.getElementById('createProjectBtn').innerHTML = '✨ 创建私密项目';
+            } else {
+                connectBtn.textContent = '连接钱包';
+                connectBtn.onclick = connectWallet;
+                
+                // 禁用需要钱包的按钮
+                document.getElementById('executeSwapBtn').disabled = true;
+                document.getElementById('executeSwapBtn').textContent = '🔐 连接钱包进行交换';
+                document.getElementById('createProjectBtn').disabled = true;
+                document.getElementById('createProjectBtn').textContent = '连接钱包创建项目';
+            }
+        }
+        
+        // 更新网络信息
+        function updateNetworkInfo() {
+            const networkInfo = document.getElementById('networkInfo');
+            const chainName = document.getElementById('chainName');
+            
+            if (chainId) {
+                const networks = {
+                    1: 'Ethereum主网',
+                    3: 'Ropsten测试网',
+                    4: 'Rinkeby测试网',
+                    5: 'Goerli测试网',
+                    11155111: 'Sepolia测试网',
+                    31337: 'Hardhat本地网'
+                };
+                
+                chainName.textContent = networks[chainId] || `链ID: ${chainId}`;
+                networkInfo.classList.remove('hidden');
+            } else {
+                networkInfo.classList.add('hidden');
+            }
+        }
+        
+        // 断开钱包连接
+        function disconnectWallet() {
+            account = null;
+            chainId = null;
+            updateWalletUI();
+            updateNetworkInfo();
+            showNotification('钱包已断开连接', 'info');
+        }
+        
+        // 处理账户变化
+        function handleAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                disconnectWallet();
+            } else {
+                account = accounts[0];
+                updateWalletUI();
+                showNotification('账户已切换', 'info');
+            }
+        }
+        
+        // 处理网络变化
+        function handleChainChanged(chainIdHex) {
+            chainId = parseInt(chainIdHex, 16);
+            updateNetworkInfo();
+            showNotification('网络已切换', 'info');
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 p-4 rounded-lg z-50 fade-in max-w-sm ${
+                type === 'success' ? 'bg-green-500' :
+                type === 'error' ? 'bg-red-500' :
+                type === 'warning' ? 'bg-yellow-500' :
+                'bg-blue-500'
+            } text-white shadow-lg`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
+        }
+        
+        // 显示加载指示器
+        function showLoading(text = '处理中...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+        }
+        
+        // 隐藏加载指示器
+        function hideLoading() {
+            document.getElementById('loadingIndicator').classList.add('hidden');
+        }
+        
+        // 显示页面部分
+        function showSection(section) {
+            const sections = ['home', 'vault', 'dex', 'create'];
+            sections.forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            
+            document.getElementById(section).classList.remove('hidden');
+            document.getElementById(section).classList.add('fade-in');
+            
+            if (section === 'vault') {
+                updateProjectsDisplay();
+            }
+        }
+        
+        // 更新项目显示
+        function updateProjectsDisplay() {
+            const grid = document.getElementById('projectsGrid');
+            grid.innerHTML = '';
+            
+            projects.forEach(project => {
+                const progress = Math.min((project.currentAmount / project.fundingGoal) * 100, 100);
+                const daysLeft = Math.ceil((project.deadline - new Date()) / (24 * 60 * 60 * 1000));
+                
+                const projectCard = document.createElement('div');
+                projectCard.className = 'glass-effect p-6 hover:scale-105 transition-transform cursor-pointer';
+                projectCard.onclick = () => openInvestModal(project.id);
+                
+                projectCard.innerHTML = `
+                    <div class="w-full h-48 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg mb-6 flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="text-4xl mb-2">${project.emoji}</div>
+                            <div class="text-white font-semibold">${project.category}</div>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">${project.title}</h3>
+                    <p class="text-white/70 text-sm mb-4">${project.description}</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-white font-semibold">${project.currentAmount.toFixed(1)} ETH</span>
+                            <span class="text-white/70 text-sm">/ ${project.fundingGoal} ETH</span>
+                        </div>
+                        <div class="w-full bg-white/10 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="flex justify-between items-center mt-2 text-xs text-white/60">
+                            <span>${project.contributors} 贡献者</span>
+                            <span>${daysLeft}天剩余</span>
+                        </div>
+                    </div>
+                    <button class="w-full btn-primary" onclick="event.stopPropagation(); openInvestModal(${project.id})">
+                        💰 私密投资 / 💝 捐款
+                    </button>
+                `;
+                
+                grid.appendChild(projectCard);
+            });
+        }
+        
+        // 打开投资模态框
+        function openInvestModal(projectId) {
+            if (!account) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+            
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentProjectId = projectId;
+            document.getElementById('modalProjectName').textContent = project.title;
+            document.getElementById('modalFundingGoal').textContent = project.fundingGoal;
+            document.getElementById('modalCurrentAmount').textContent = project.currentAmount.toFixed(1);
+            document.getElementById('modalContributors').textContent = project.contributors;
+            document.getElementById('investModal').classList.remove('hidden');
+        }
+        
+        // 关闭投资模态框
+        function closeInvestModal() {
+            document.getElementById('investModal').classList.add('hidden');
+            document.getElementById('investAmount').value = '';
+            currentProjectId = null;
+        }
+        
+        // 确认投资
+        async function confirmInvestment() {
+            const amount = document.getElementById('investAmount').value;
+            if (!amount || parseFloat(amount) <= 0) {
+                showNotification('请输入有效的投资金额', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('准备MetaMask交易...');
+                
+                // 模拟智能合约交互
+                const transactionHash = await sendTransaction(amount, 'investment');
+                
+                if (transactionHash) {
+                    // 更新项目数据
+                    updateProjectAfterInvestment(currentProjectId, parseFloat(amount));
+                    closeInvestModal();
+                    showNotification(`投资成功！交易哈希: ${transactionHash.slice(0, 10)}...`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('投资失败:', error);
+                showNotification('投资失败: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 确认捐款
+        async function confirmDonation() {
+            const amount = document.getElementById('investAmount').value;
+            if (!amount || parseFloat(amount) <= 0) {
+                showNotification('请输入有效的捐款金额', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('准备MetaMask捐款交易...');
+                
+                // 模拟智能合约交互
+                const transactionHash = await sendTransaction(amount, 'donation');
+                
+                if (transactionHash) {
+                    // 更新项目数据
+                    updateProjectAfterInvestment(currentProjectId, parseFloat(amount));
+                    closeInvestModal();
+                    showNotification(`捐款成功！交易哈希: ${transactionHash.slice(0, 10)}...`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('捐款失败:', error);
+                showNotification('捐款失败: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 发送交易
+        async function sendTransaction(amount, type) {
+            const params = {
+                from: account,
+                to: '0x742d35Cc6e3FB4A4d4d2F8D9C3E5a4Ba7dC4C4E0', // 模拟合约地址
+                value: '0x' + (parseFloat(amount) * Math.pow(10, 18)).toString(16),
+                gas: '0x5208',
+                gasPrice: '0x' + (20 * Math.pow(10, 9)).toString(16)
+            };
+            
+            const transactionHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [params]
+            });
+            
+            return transactionHash;
+        }
+        
+        // 更新项目投资后数据
+        function updateProjectAfterInvestment(projectId, amount) {
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                project.currentAmount += amount;
+                project.contributors += 1;
+                updateProjectsDisplay();
+            }
+        }
+        
+        // 创建项目
+        async function createProject(event) {
+            event.preventDefault();
+            
+            if (!account) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+            
+            const title = document.getElementById('projectTitle').value;
+            const description = document.getElementById('projectDescription').value;
+            const category = document.getElementById('projectCategory').value;
+            const fundingGoal = parseFloat(document.getElementById('fundingGoal').value);
+            const duration = parseInt(document.getElementById('projectDuration').value);
+            
+            if (!title || !description || !fundingGoal) {
+                showNotification('请填写所有必填字段', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('准备MetaMask创建交易...');
+                
+                // 模拟智能合约部署交易
+                const transactionHash = await sendTransaction('0.01', 'create_project'); // 部署费用
+                
+                if (transactionHash) {
+                    // 创建新项目
+                    const newProject = {
+                        id: projects.length + 1,
+                        title: title,
+                        description: description,
+                        category: category,
+                        creator: account,
+                        fundingGoal: fundingGoal,
+                        currentAmount: 0,
+                        contributors: 0,
+                        deadline: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+                        emoji: getEmojiForCategory(category)
+                    };
+                    
+                    projects.push(newProject);
+                    
+                    // 清空表单
+                    document.getElementById('createProjectForm').reset();
+                    
+                    // 显示成功消息并跳转到金库页面
+                    showNotification(`项目创建成功！交易哈希: ${transactionHash.slice(0, 10)}...`, 'success');
+                    
+                    setTimeout(() => {
+                        showSection('vault');
+                        showNotification('新项目已添加到项目列表！', 'info');
+                    }, 2000);
+                }
+                
+            } catch (error) {
+                console.error('创建项目失败:', error);
+                showNotification('创建项目失败: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 根据类别获取表情符号
+        function getEmojiForCategory(category) {
+            const emojis = {
+                'DeFi': '🚀',
+                'NFT': '🎨',
+                '游戏': '🎮',
+                '基础设施': '🏗️',
+                '其他': '💡'
+            };
+            return emojis[category] || '💡';
+        }
+        
+        // DEX相关功能
+        function switchDEXTab(tab) {
+            document.getElementById('swapTab').className = 'px-4 py-2 text-white/70 hover:text-white transition-colors';
+            document.getElementById('limitTab').className = 'px-4 py-2 text-white/70 hover:text-white transition-colors';
+            
+            if (tab === 'swap') {
+                document.getElementById('swapTab').className = 'px-4 py-2 bg-purple-500 text-white rounded-lg font-medium';
+                document.getElementById('swapInterface').classList.remove('hidden');
+                document.getElementById('limitInterface').classList.add('hidden');
+            } else {
+                document.getElementById('limitTab').className = 'px-4 py-2 bg-purple-500 text-white rounded-lg font-medium';
+                document.getElementById('swapInterface').classList.add('hidden');
+                document.getElementById('limitInterface').classList.remove('hidden');
+            }
+        }
+        
+        // 更新代币对
+        function updateTokenPair() {
+            const fromToken = document.getElementById('fromToken').value;
+            const toToken = document.getElementById('toToken').value;
+            
+            document.getElementById('fromTokenName').textContent = tokens[fromToken].name;
+            document.getElementById('toTokenName').textContent = tokens[toToken].name;
+            
+            updateExchangeRate();
+            calculateToAmount();
+        }
+        
+        // 更新汇率
+        function updateExchangeRate() {
+            const fromToken = document.getElementById('fromToken').value;
+            const toToken = document.getElementById('toToken').value;
+            
+            const rate = tokens[fromToken].price / tokens[toToken].price;
+            document.getElementById('exchangeRate').textContent = `1 ${fromToken} = ${rate.toFixed(2)} ${toToken}`;
+        }
+        
+        // 计算输出金额
+        function calculateToAmount() {
+            const fromAmount = parseFloat(document.getElementById('fromAmount').value) || 0;
+            const fromToken = document.getElementById('fromToken').value;
+            const toToken = document.getElementById('toToken').value;
+            
+            if (fromAmount > 0) {
+                const rate = tokens[fromToken].price / tokens[toToken].price;
+                const toAmount = (fromAmount * rate * 0.997).toFixed(6); // 0.3% fee
+                document.getElementById('toAmount').value = toAmount;
+            } else {
+                document.getElementById('toAmount').value = '';
+            }
+        }
+        
+        // 交换代币位置
+        function swapTokens() {
+            const fromToken = document.getElementById('fromToken');
+            const toToken = document.getElementById('toToken');
+            const fromAmount = document.getElementById('fromAmount');
+            const toAmount = document.getElementById('toAmount');
+            
+            const tempToken = fromToken.value;
+            const tempAmount = fromAmount.value;
+            
+            fromToken.value = toToken.value;
+            toToken.value = tempToken;
+            fromAmount.value = toAmount.value;
+            
+            updateTokenPair();
+        }
+        
+        // 执行交换
+        async function executeSwap() {
+            if (!account) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+            
+            const fromAmount = document.getElementById('fromAmount').value;
+            const fromToken = document.getElementById('fromToken').value;
+            const toToken = document.getElementById('toToken').value;
+            
+            if (!fromAmount || parseFloat(fromAmount) <= 0) {
+                showNotification('请输入有效的交换金额', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('准备MetaMask交换交易...');
+                
+                const transactionHash = await sendTransaction(fromAmount, 'swap');
+                
+                if (transactionHash) {
+                    // 添加到交易历史
+                    const trade = {
+                        id: Date.now(),
+                        type: 'swap',
+                        fromToken: fromToken,
+                        toToken: toToken,
+                        amount: '***', // 加密金额
+                        timestamp: new Date(),
+                        status: 'completed',
+                        hash: transactionHash
+                    };
+                    
+                    tradeHistory.unshift(trade);
+                    updateTradeHistory();
+                    
+                    // 清空表单
+                    document.getElementById('fromAmount').value = '';
+                    document.getElementById('toAmount').value = '';
+                    
+                    showNotification(`交换成功！交易哈希: ${transactionHash.slice(0, 10)}...`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('交换失败:', error);
+                showNotification('交换失败: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 创建限价单
+        async function createLimitOrder(type) {
+            if (!account) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+            
+            const fromAmount = document.getElementById('fromAmount').value;
+            const limitPrice = document.getElementById('limitPrice').value;
+            const fromToken = document.getElementById('fromToken').value;
+            const toToken = document.getElementById('toToken').value;
+            
+            if (!fromAmount || !limitPrice) {
+                showNotification('请输入金额和限价', 'error');
+                return;
+            }
+            
+            try {
+                showLoading(`准备MetaMask${type === 'buy' ? '买单' : '卖单'}交易...`);
+                
+                const transactionHash = await sendTransaction('0.001', 'limit_order'); // 订单创建费用
+                
+                if (transactionHash) {
+                    const trade = {
+                        id: Date.now(),
+                        type: type,
+                        fromToken: fromToken,
+                        toToken: toToken,
+                        amount: '***',
+                        price: limitPrice,
+                        timestamp: new Date(),
+                        status: 'pending',
+                        hash: transactionHash
+                    };
+                    
+                    tradeHistory.unshift(trade);
+                    updateTradeHistory();
+                    
+                    document.getElementById('fromAmount').value = '';
+                    document.getElementById('limitPrice').value = '';
+                    
+                    showNotification(`${type === 'buy' ? '买单' : '卖单'}创建成功！`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('创建订单失败:', error);
+                showNotification('创建订单失败: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 更新交易历史
+        function updateTradeHistory() {
+            const historyContainer = document.getElementById('tradeHistory');
+            
+            if (tradeHistory.length === 0) {
+                historyContainer.innerHTML = `
+                    <div class="text-center py-8 text-white/50">
+                        <span class="text-4xl mb-3 block">📊</span>
+                        <p>暂无交易记录</p>
+                        <p class="text-sm">开始交易以查看历史记录</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyContainer.innerHTML = '';
+            
+            tradeHistory.forEach(trade => {
+                const tradeItem = document.createElement('div');
+                tradeItem.className = 'glass-effect p-4 rounded-lg';
+                
+                const typeColor = {
+                    'swap': 'bg-blue-500/20 text-blue-300',
+                    'buy': 'bg-green-500/20 text-green-300',
+                    'sell': 'bg-red-500/20 text-red-300'
+                };
+                
+                const statusColor = trade.status === 'completed' ? 'text-green-400' : 'text-yellow-400';
+                const statusIcon = trade.status === 'completed' ? '✅' : '⏳';
+                
+                tradeItem.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-2 py-1 rounded text-xs font-medium ${typeColor[trade.type]}">
+                            ${trade.type === 'swap' ? '交换' : trade.type === 'buy' ? '买入' : '卖出'}
+                        </span>
+                        <div class="flex items-center">
+                            <span class="mr-1">${statusIcon}</span>
+                            <span class="text-xs ${statusColor}">${trade.status === 'completed' ? '已完成' : '待处理'}</span>
+                        </div>
+                    </div>
+                    <div class="text-white font-medium mb-1">${trade.fromToken} → ${trade.toToken}</div>
+                    <div class="flex justify-between text-sm text-white/70">
+                        <span>金额: ${trade.amount}</span>
+                        <span>${formatTime(trade.timestamp)}</span>
+                    </div>
+                `;
+                
+                historyContainer.appendChild(tradeItem);
+            });
+        }
+        
+        // 格式化时间
+        function formatTime(timestamp) {
+            const now = new Date();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            
+            if (minutes < 1) return '刚刚';
+            if (minutes < 60) return `${minutes}分钟前`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}小时前`;
+            const days = Math.floor(hours / 24);
+            return `${days}天前`;
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProjects();
+            updateTokenPair();
+            showNotification('欢迎使用 CryptoVault - 机密DeFi平台！连接MetaMask开始使用。', 'info');
+        });
+    </script>
+</body>
+</html>

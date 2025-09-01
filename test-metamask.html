@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaMask连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .status-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #00ff00;
+        }
+        .error-box {
+            background: rgba(255, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #ff0000;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 MetaMask连接诊断工具</h1>
+        
+        <div id="statusDisplay" class="status-box">
+            <h3>检测状态：</h3>
+            <div id="statusText">正在检测...</div>
+        </div>
+
+        <div class="buttons">
+            <button onclick="detectMetaMask()">🔍 检测MetaMask</button>
+            <button onclick="connectWallet()" id="connectBtn" disabled>🔗 连接钱包</button>
+            <button onclick="sendTestTransaction()" id="sendBtn" disabled>💸 发送测试交易</button>
+            <button onclick="clearLogs()">🗑️ 清空日志</button>
+        </div>
+
+        <div id="errorDisplay" class="error-box" style="display: none;">
+            <h3>❌ 错误信息：</h3>
+            <div id="errorText"></div>
+        </div>
+
+        <div class="status-box">
+            <h3>📋 详细日志：</h3>
+            <pre id="logOutput">等待操作...</pre>
+        </div>
+
+        <div class="status-box">
+            <h3>💡 解决方案：</h3>
+            <ul>
+                <li>确保已安装MetaMask浏览器扩展</li>
+                <li>刷新页面并重试</li>
+                <li>检查MetaMask是否被其他网站阻止</li>
+                <li>尝试在无痕模式下测试</li>
+                <li>检查浏览器控制台错误信息</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let account = null;
+        let logs = [];
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${message}`);
+            document.getElementById('logOutput').textContent = logs.join('\n');
+            console.log(message);
+        }
+
+        function showError(message) {
+            document.getElementById('errorDisplay').style.display = 'block';
+            document.getElementById('errorText').textContent = message;
+            addLog(`❌ 错误: ${message}`);
+        }
+
+        function hideError() {
+            document.getElementById('errorDisplay').style.display = 'none';
+        }
+
+        function clearLogs() {
+            logs = [];
+            document.getElementById('logOutput').textContent = '日志已清空';
+            hideError();
+        }
+
+        async function detectMetaMask() {
+            addLog('🔍 开始检测MetaMask...');
+            hideError();
+            
+            // 检查基本变量
+            addLog(`window.ethereum 存在: ${!!window.ethereum}`);
+            addLog(`window.web3 存在: ${!!window.web3}`);
+            
+            if (!window.ethereum) {
+                showError('MetaMask未安装或未启用');
+                document.getElementById('statusText').innerHTML = `
+                    ❌ MetaMask未检测到<br>
+                    <a href="https://metamask.io/download/" target="_blank" style="color: #00ff00;">点击下载MetaMask</a>
+                `;
+                return;
+            }
+
+            // 检测MetaMask详细信息
+            addLog(`MetaMask isMetaMask: ${window.ethereum.isMetaMask}`);
+            addLog(`MetaMask chainId: ${window.ethereum.chainId}`);
+            addLog(`MetaMask selectedAddress: ${window.ethereum.selectedAddress}`);
+
+            // 检查权限
+            try {
+                const permissions = await window.ethereum.request({
+                    method: 'wallet_getPermissions'
+                });
+                addLog(`权限数量: ${permissions.length}`);
+                
+                const accounts = await window.ethereum.request({
+                    method: 'eth_accounts'
+                });
+                addLog(`已连接账户数: ${accounts.length}`);
+                
+                if (accounts.length > 0) {
+                    account = accounts[0];
+                    addLog(`当前账户: ${account}`);
+                    document.getElementById('statusText').innerHTML = `
+                        ✅ MetaMask已安装并连接<br>
+                        账户: ${account.slice(0,6)}...${account.slice(-4)}
+                    `;
+                    document.getElementById('connectBtn').textContent = '✅ 已连接';
+                    document.getElementById('sendBtn').disabled = false;
+                } else {
+                    document.getElementById('statusText').innerHTML = `
+                        ✅ MetaMask已安装<br>
+                        ⚠️ 未连接账户
+                    `;
+                    document.getElementById('connectBtn').disabled = false;
+                }
+                
+            } catch (error) {
+                addLog(`权限检查失败: ${error.message}`);
+                document.getElementById('connectBtn').disabled = false;
+            }
+        }
+
+        async function connectWallet() {
+            addLog('🔗 开始连接钱包...');
+            hideError();
+
+            if (!window.ethereum) {
+                showError('MetaMask未安装');
+                return;
+            }
+
+            const connectBtn = document.getElementById('connectBtn');
+            const originalText = connectBtn.textContent;
+            
+            try {
+                connectBtn.textContent = '连接中...';
+                connectBtn.disabled = true;
+
+                addLog('发送连接请求...');
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                addLog(`收到账户: ${JSON.stringify(accounts)}`);
+
+                if (accounts && accounts.length > 0) {
+                    account = accounts[0];
+                    addLog(`✅ 连接成功: ${account}`);
+                    
+                    document.getElementById('statusText').innerHTML = `
+                        ✅ 钱包连接成功<br>
+                        账户: ${account.slice(0,6)}...${account.slice(-4)}
+                    `;
+                    
+                    connectBtn.textContent = '✅ 已连接';
+                    document.getElementById('sendBtn').disabled = false;
+
+                    // 获取网络信息
+                    try {
+                        const chainId = await window.ethereum.request({
+                            method: 'eth_chainId'
+                        });
+                        addLog(`网络链ID: ${chainId} (${parseInt(chainId, 16)})`);
+                    } catch (chainError) {
+                        addLog(`获取链ID失败: ${chainError.message}`);
+                    }
+
+                } else {
+                    throw new Error('未返回任何账户');
+                }
+
+            } catch (error) {
+                addLog(`❌ 连接失败: ${error.message}`);
+                addLog(`错误代码: ${error.code}`);
+                addLog(`完整错误: ${JSON.stringify(error, null, 2)}`);
+                
+                let errorMessage = '连接失败';
+                
+                if (error.code === 4001) {
+                    errorMessage = '用户拒绝了连接请求';
+                } else if (error.code === -32002) {
+                    errorMessage = 'MetaMask连接请求待处理，请检查MetaMask弹窗';
+                } else if (error.code === -32603) {
+                    errorMessage = '内部错误，请重试';
+                } else {
+                    errorMessage = `连接失败: ${error.message}`;
+                }
+                
+                showError(errorMessage);
+                connectBtn.textContent = originalText;
+                connectBtn.disabled = false;
+            }
+        }
+
+        async function sendTestTransaction() {
+            addLog('💸 准备发送测试交易...');
+            hideError();
+
+            if (!account) {
+                showError('请先连接钱包');
+                return;
+            }
+
+            const sendBtn = document.getElementById('sendBtn');
+            const originalText = sendBtn.textContent;
+
+            try {
+                sendBtn.textContent = '发送中...';
+                sendBtn.disabled = true;
+
+                addLog('发送交易请求到MetaMask...');
+                
+                const txParams = {
+                    from: account,
+                    to: '0x742d35Cc6bf08Ca904C1b3D02d97bCd2de0a04C8',
+                    value: '0x16345785d8a0000', // 0.1 ETH in wei (hex)
+                    gas: '0x5208', // 21000 gas
+                };
+
+                addLog(`交易参数: ${JSON.stringify(txParams, null, 2)}`);
+
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [txParams],
+                });
+
+                addLog(`✅ 交易发送成功!`);
+                addLog(`交易哈希: ${txHash}`);
+                
+                document.getElementById('statusText').innerHTML = `
+                    ✅ 测试交易成功<br>
+                    哈希: ${txHash.slice(0,10)}...${txHash.slice(-8)}
+                `;
+
+            } catch (error) {
+                addLog(`❌ 交易失败: ${error.message}`);
+                addLog(`错误代码: ${error.code}`);
+                addLog(`完整错误: ${JSON.stringify(error, null, 2)}`);
+                
+                let errorMessage = '交易失败';
+                
+                if (error.code === 4001) {
+                    errorMessage = '用户取消了交易';
+                } else if (error.code === -32603) {
+                    errorMessage = '交易被拒绝，可能是余额不足';
+                } else if (error.code === -32000) {
+                    errorMessage = '余额不足';
+                } else {
+                    errorMessage = `交易失败: ${error.message}`;
+                }
+                
+                showError(errorMessage);
+                
+            } finally {
+                sendBtn.textContent = originalText;
+                sendBtn.disabled = false;
+            }
+        }
+
+        // 监听MetaMask事件
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', function(accounts) {
+                addLog(`账户变更: ${JSON.stringify(accounts)}`);
+                if (accounts.length > 0) {
+                    account = accounts[0];
+                } else {
+                    account = null;
+                    document.getElementById('connectBtn').textContent = '🔗 连接钱包';
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('sendBtn').disabled = true;
+                }
+            });
+
+            window.ethereum.on('chainChanged', function(chainId) {
+                addLog(`网络变更: ${chainId} (${parseInt(chainId, 16)})`);
+            });
+        }
+
+        // 页面加载时自动检测
+        window.addEventListener('load', () => {
+            addLog('📱 页面加载完成');
+            setTimeout(detectMetaMask, 1000);
+        });
+    </script>
+</body>
+</html>

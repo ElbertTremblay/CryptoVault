@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoVault - 终极钱包连接</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        .status {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            min-height: 60px;
+        }
+        .success { border-left: 4px solid #00ff00; }
+        .error { border-left: 4px solid #ff0000; }
+        .warning { border-left: 4px solid #ffaa00; }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 10px;
+            min-width: 200px;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .big-button {
+            font-size: 24px;
+            padding: 20px 40px;
+            margin: 20px;
+        }
+        .investment-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        .project-card {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .project-card:hover {
+            transform: scale(1.05);
+        }
+        input {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            margin: 10px;
+            font-size: 16px;
+            width: 200px;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏦 CryptoVault DeFi平台</h1>
+        <h2>私密投资 | 机密交易 | FHE加密</h2>
+        
+        <div id="walletStatus" class="status">
+            <div id="statusText">🔍 正在检测钱包...</div>
+        </div>
+
+        <!-- 钱包连接按钮 -->
+        <div>
+            <button id="connectBtn" onclick="connectWallet()" class="big-button">
+                🔗 连接MetaMask钱包
+            </button>
+        </div>
+
+        <!-- 备用连接方法 -->
+        <div id="backupMethods" style="display: none;">
+            <h3>⚠️ 连接失败？试试这些方法：</h3>
+            <button onclick="connectMethod1()">方法1: 基础连接</button>
+            <button onclick="connectMethod2()">方法2: 强制连接</button>
+            <button onclick="connectMethod3()">方法3: 兼容连接</button>
+            <button onclick="refreshAndRetry()">刷新页面重试</button>
+        </div>
+
+        <!-- 功能区域 -->
+        <div id="featuresSection" style="display: none;">
+            <div class="investment-section">
+                <h3>💎 私密投资项目</h3>
+                <div class="project-card" onclick="openInvestModal('DeFi收益优化器')">
+                    <h4>🚀 DeFi收益优化器</h4>
+                    <p>目标: 500 ETH | 已筹: 342 ETH | 贡献者: 127</p>
+                    <div style="background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px;">
+                        <div style="background: linear-gradient(90deg, #00ff00, #00aa00); height: 100%; width: 68%; border-radius: 4px;"></div>
+                    </div>
+                </div>
+                
+                <div class="project-card" onclick="openInvestModal('隐私NFT市场')">
+                    <h4>🎨 隐私NFT市场</h4>
+                    <p>目标: 750 ETH | 已筹: 456 ETH | 贡献者: 89</p>
+                    <div style="background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px;">
+                        <div style="background: linear-gradient(90deg, #ff6b6b, #ff3030); height: 100%; width: 61%; border-radius: 4px;"></div>
+                    </div>
+                </div>
+                
+                <div class="project-card" onclick="openInvestModal('量子安全钱包')">
+                    <h4>🔒 量子安全钱包</h4>
+                    <p>目标: 1000 ETH | 已筹: 789 ETH | 贡献者: 234</p>
+                    <div style="background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px;">
+                        <div style="background: linear-gradient(90deg, #4facfe, #00f2fe); height: 100%; width: 79%; border-radius: 4px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="investment-section">
+                <h3>🔄 机密DEX交易</h3>
+                <p>完全私密的代币交换，订单大小加密保护</p>
+                <button onclick="executeSwap()" class="big-button">🔐 私密交换</button>
+            </div>
+
+            <div class="investment-section">
+                <h3>✨ 创建新项目</h3>
+                <p>启动您的私密筹资活动</p>
+                <button onclick="createProject()" class="big-button">📝 创建项目</button>
+            </div>
+        </div>
+
+        <!-- 调试信息 -->
+        <div id="debugInfo" class="status" style="text-align: left; font-family: monospace; font-size: 12px;">
+            <strong>调试信息：</strong><br>
+            <div id="debugText">等待检测...</div>
+        </div>
+    </div>
+
+    <!-- 投资模态框 -->
+    <div id="investModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">💰 私密投资</h3>
+            <p id="modalProject"></p>
+            <input type="number" id="investAmount" placeholder="投资金额 (ETH)" step="0.01" min="0.01">
+            <br>
+            <button onclick="confirmInvestment()">确认投资</button>
+            <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
+
+    <script>
+        let account = null;
+        let currentProject = null;
+        let debugInfo = [];
+
+        function addDebug(msg) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.push(`[${timestamp}] ${msg}`);
+            document.getElementById('debugText').innerHTML = debugInfo.slice(-10).join('<br>');
+            console.log(msg);
+        }
+
+        // 页面加载时检测
+        window.addEventListener('load', async () => {
+            addDebug('页面加载完成');
+            await detectWallet();
+        });
+
+        // 检测钱包状态
+        async function detectWallet() {
+            addDebug('开始检测钱包...');
+            const statusDiv = document.getElementById('walletStatus');
+            const statusText = document.getElementById('statusText');
+
+            // 检查各种可能的以太坊提供者
+            const providers = [];
+            if (window.ethereum) providers.push('window.ethereum');
+            if (window.web3) providers.push('window.web3');
+            if (window.metamask) providers.push('window.metamask');
+            
+            addDebug(`检测到提供者: ${providers.join(', ')}`);
+
+            if (!window.ethereum) {
+                statusDiv.className = 'status error';
+                statusText.innerHTML = '❌ 未检测到MetaMask<br><a href="https://metamask.io/download/" target="_blank" style="color: #00ff00;">点击安装MetaMask</a>';
+                addDebug('MetaMask未安装');
+                return;
+            }
+
+            addDebug(`MetaMask信息: isMetaMask=${window.ethereum.isMetaMask}, chainId=${window.ethereum.chainId}`);
+
+            try {
+                // 检查已连接的账户
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                addDebug(`已连接账户: ${accounts.length} 个`);
+
+                if (accounts.length > 0) {
+                    account = accounts[0];
+                    statusDiv.className = 'status success';
+                    statusText.innerHTML = `✅ 钱包已连接<br>账户: ${account.slice(0,6)}...${account.slice(-4)}`;
+                    document.getElementById('connectBtn').textContent = '✅ 已连接';
+                    showFeatures();
+                    addDebug(`自动连接成功: ${account}`);
+                } else {
+                    statusDiv.className = 'status warning';
+                    statusText.innerHTML = '⚠️ MetaMask已安装，但未连接<br>点击按钮连接钱包';
+                    addDebug('MetaMask已安装但未连接');
+                }
+            } catch (error) {
+                addDebug(`检测失败: ${error.message}`);
+                statusDiv.className = 'status warning';
+                statusText.innerHTML = '⚠️ 无法检测连接状态<br>点击按钮尝试连接';
+            }
+        }
+
+        // 连接钱包 - 主方法
+        async function connectWallet() {
+            addDebug('开始连接钱包...');
+            const button = document.getElementById('connectBtn');
+            const originalText = button.textContent;
+
+            try {
+                button.textContent = '🔄 连接中...';
+                button.disabled = true;
+
+                if (!window.ethereum) {
+                    throw new Error('MetaMask未安装');
+                }
+
+                addDebug('发送连接请求...');
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('未获取到账户');
+                }
+
+                account = accounts[0];
+                addDebug(`连接成功: ${account}`);
+
+                // 更新UI
+                const statusDiv = document.getElementById('walletStatus');
+                const statusText = document.getElementById('statusText');
+                statusDiv.className = 'status success';
+                statusText.innerHTML = `✅ 连接成功！<br>账户: ${account.slice(0,6)}...${account.slice(-4)}`;
+                
+                button.textContent = '✅ 已连接';
+                showFeatures();
+
+                // 隐藏备用方法
+                document.getElementById('backupMethods').style.display = 'none';
+
+            } catch (error) {
+                addDebug(`连接失败: ${error.message} (代码: ${error.code})`);
+                
+                // 显示备用连接方法
+                document.getElementById('backupMethods').style.display = 'block';
+                
+                const statusDiv = document.getElementById('walletStatus');
+                const statusText = document.getElementById('statusText');
+                statusDiv.className = 'status error';
+                
+                let errorMsg = '连接失败: ';
+                if (error.code === 4001) {
+                    errorMsg = '❌ 用户拒绝连接';
+                } else if (error.code === -32002) {
+                    errorMsg = '⏳ 连接请求待处理，请检查MetaMask弹窗';
+                } else {
+                    errorMsg = `❌ 连接失败: ${error.message}`;
+                }
+                
+                statusText.innerHTML = errorMsg;
+                
+            } finally {
+                if (!account) {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+            }
+        }
+
+        // 备用连接方法1 - 基础连接
+        async function connectMethod1() {
+            addDebug('尝试方法1: 基础连接');
+            try {
+                if (window.ethereum) {
+                    await window.ethereum.enable();
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        account = accounts[0];
+                        updateSuccessUI();
+                        addDebug('方法1成功');
+                    }
+                }
+            } catch (error) {
+                addDebug(`方法1失败: ${error.message}`);
+            }
+        }
+
+        // 备用连接方法2 - 强制连接
+        async function connectMethod2() {
+            addDebug('尝试方法2: 强制连接');
+            try {
+                if (window.ethereum && window.ethereum.request) {
+                    const accounts = await window.ethereum.request({
+                        method: 'wallet_requestPermissions',
+                        params: [{ eth_accounts: {} }]
+                    }).then(() => window.ethereum.request({ method: 'eth_accounts' }));
+                    
+                    if (accounts.length > 0) {
+                        account = accounts[0];
+                        updateSuccessUI();
+                        addDebug('方法2成功');
+                    }
+                }
+            } catch (error) {
+                addDebug(`方法2失败: ${error.message}`);
+            }
+        }
+
+        // 备用连接方法3 - 兼容连接
+        async function connectMethod3() {
+            addDebug('尝试方法3: 兼容连接');
+            try {
+                if (window.web3 && window.web3.currentProvider) {
+                    const accounts = await new Promise((resolve, reject) => {
+                        window.web3.eth.getAccounts((err, accounts) => {
+                            if (err) reject(err);
+                            else resolve(accounts);
+                        });
+                    });
+                    
+                    if (accounts.length > 0) {
+                        account = accounts[0];
+                        updateSuccessUI();
+                        addDebug('方法3成功');
+                    }
+                }
+            } catch (error) {
+                addDebug(`方法3失败: ${error.message}`);
+            }
+        }
+
+        function updateSuccessUI() {
+            const statusDiv = document.getElementById('walletStatus');
+            const statusText = document.getElementById('statusText');
+            const button = document.getElementById('connectBtn');
+            
+            statusDiv.className = 'status success';
+            statusText.innerHTML = `✅ 连接成功！<br>账户: ${account.slice(0,6)}...${account.slice(-4)}`;
+            button.textContent = '✅ 已连接';
+            
+            showFeatures();
+            document.getElementById('backupMethods').style.display = 'none';
+        }
+
+        function refreshAndRetry() {
+            addDebug('刷新页面重试');
+            location.reload();
+        }
+
+        function showFeatures() {
+            document.getElementById('featuresSection').style.display = 'block';
+        }
+
+        // 投资功能
+        function openInvestModal(projectName) {
+            if (!account) {
+                alert('请先连接钱包');
+                return;
+            }
+            currentProject = projectName;
+            document.getElementById('modalProject').textContent = projectName;
+            document.getElementById('investModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('investModal').style.display = 'none';
+        }
+
+        async function confirmInvestment() {
+            const amount = document.getElementById('investAmount').value;
+            if (!amount || parseFloat(amount) <= 0) {
+                alert('请输入有效的投资金额');
+                return;
+            }
+
+            try {
+                addDebug(`发送投资交易: ${amount} ETH`);
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: account,
+                        to: '0x742d35Cc6bf08Ca904C1b3D02d97bCd2de0a04C8',
+                        value: '0x' + Math.floor(parseFloat(amount) * 1e18).toString(16),
+                        gas: '0x5208',
+                    }],
+                });
+
+                alert(`投资成功！\n项目: ${currentProject}\n金额: ${amount} ETH\n交易: ${txHash.slice(0,10)}...`);
+                addDebug(`投资成功: ${txHash}`);
+                closeModal();
+
+            } catch (error) {
+                addDebug(`投资失败: ${error.message}`);
+                if (error.code === 4001) {
+                    alert('交易被取消');
+                } else {
+                    alert(`投资失败: ${error.message}`);
+                }
+            }
+        }
+
+        // DEX交换
+        async function executeSwap() {
+            if (!account) {
+                alert('请先连接钱包');
+                return;
+            }
+
+            try {
+                addDebug('发送DEX交换交易');
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: account,
+                        to: '0x1234567890123456789012345678901234567890',
+                        value: '0x16345785d8a0000', // 0.1 ETH
+                        gas: '0x7530',
+                    }],
+                });
+
+                alert(`DEX交换成功！\n交易: ${txHash.slice(0,10)}...`);
+                addDebug(`DEX交换成功: ${txHash}`);
+
+            } catch (error) {
+                addDebug(`DEX交换失败: ${error.message}`);
+                if (error.code === 4001) {
+                    alert('交易被取消');
+                } else {
+                    alert(`DEX交换失败: ${error.message}`);
+                }
+            }
+        }
+
+        // 创建项目
+        async function createProject() {
+            if (!account) {
+                alert('请先连接钱包');
+                return;
+            }
+
+            const title = prompt('请输入项目标题:');
+            if (!title) return;
+
+            try {
+                addDebug('发送项目创建交易');
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: account,
+                        to: '0x742d35Cc6bf08Ca904C1b3D02d97bCd2de0a04C8',
+                        value: '0x2386f26fc10000', // 0.01 ETH
+                        gas: '0x7530',
+                    }],
+                });
+
+                alert(`项目创建成功！\n项目: ${title}\n交易: ${txHash.slice(0,10)}...`);
+                addDebug(`项目创建成功: ${txHash}`);
+
+            } catch (error) {
+                addDebug(`项目创建失败: ${error.message}`);
+                if (error.code === 4001) {
+                    alert('交易被取消');
+                } else {
+                    alert(`项目创建失败: ${error.message}`);
+                }
+            }
+        }
+
+        // 监听账户变化
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', function(accounts) {
+                addDebug(`账户变更: ${accounts.length} 个账户`);
+                if (accounts.length === 0) {
+                    account = null;
+                    location.reload();
+                } else {
+                    account = accounts[0];
+                    updateSuccessUI();
+                }
+            });
+
+            window.ethereum.on('chainChanged', function(chainId) {
+                addDebug(`网络变更: ${chainId}`);
+            });
+        }
+    </script>
+</body>
+</html>

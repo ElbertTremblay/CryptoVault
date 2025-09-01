@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复版 MetaMask 测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        .log {
+            text-align: left;
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #00bfff; }
+        .warning { color: #ffaa00; }
+        .alert {
+            background: rgba(255, 165, 0, 0.2);
+            border: 2px solid orange;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #ffaa00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>修复版 MetaMask 测试</h1>
+        
+        <div class="alert">
+            <strong>⚠️ 重要提示：</strong><br>
+            如果遇到 "already pending" 错误，请：<br>
+            1. 打开 MetaMask 扩展<br>
+            2. 检查是否有待处理的请求，如有请处理或取消<br>
+            3. 刷新此页面重试
+        </div>
+        
+        <div class="status">
+            <div id="status">未连接</div>
+            <div id="address"></div>
+            <div id="balance"></div>
+        </div>
+        
+        <div>
+            <button onclick="checkMetaMaskStatus()">检查 MetaMask 状态</button>
+            <button onclick="smartConnect()">智能连接</button>
+            <button onclick="forceRefresh()">强制刷新</button>
+        </div>
+        
+        <div>
+            <button onclick="sendTestTransaction()" id="txBtn" disabled>发送测试交易</button>
+            <button onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div class="log" id="log">等待操作...</div>
+    </div>
+
+    <script>
+        let connectedAccount = null;
+        let connectionAttempts = 0;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('log');
+            const className = type === 'error' ? 'error' : 
+                             type === 'success' ? 'success' : 
+                             type === 'warning' ? 'warning' : 'info';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '日志已清空<br>';
+        }
+        
+        function updateStatus(status, address = '', balance = '') {
+            document.getElementById('status').textContent = status;
+            document.getElementById('address').textContent = address;
+            document.getElementById('balance').textContent = balance;
+            document.getElementById('txBtn').disabled = !address;
+        }
+        
+        // 检查MetaMask状态
+        async function checkMetaMaskStatus() {
+            log('=== 检查 MetaMask 状态 ===');
+            
+            if (!window.ethereum) {
+                log('❌ MetaMask 未安装', 'error');
+                return;
+            }
+            
+            log('✅ MetaMask 已安装');
+            log(`连接状态: ${window.ethereum.isConnected() ? '已连接' : '未连接'}`);
+            log(`是否为 MetaMask: ${window.ethereum.isMetaMask ? 'Yes' : 'No'}`);
+            log(`网络版本: ${window.ethereum.networkVersion || 'unknown'}`);
+            
+            // 检查已连接的账户
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    log(`🔗 已连接账户: ${accounts[0]}`, 'success');
+                    connectedAccount = accounts[0];
+                    await updateBalance();
+                } else {
+                    log('📝 没有已连接的账户', 'warning');
+                    connectedAccount = null;
+                }
+            } catch (error) {
+                log(`检查账户失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 更新余额
+        async function updateBalance() {
+            if (!connectedAccount) return;
+            
+            try {
+                const balance = await window.ethereum.request({
+                    method: 'eth_getBalance',
+                    params: [connectedAccount, 'latest']
+                });
+                const ethBalance = parseInt(balance, 16) / Math.pow(10, 18);
+                updateStatus('已连接', connectedAccount, `余额: ${ethBalance.toFixed(4)} ETH`);
+                log(`💰 余额更新: ${ethBalance.toFixed(4)} ETH`);
+            } catch (error) {
+                log(`获取余额失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 智能连接
+        async function smartConnect() {
+            connectionAttempts++;
+            log(`=== 第 ${connectionAttempts} 次连接尝试 ===`);
+            
+            if (!window.ethereum) {
+                log('❌ MetaMask 未安装', 'error');
+                alert('请先安装 MetaMask: https://metamask.io');
+                return;
+            }
+            
+            try {
+                // 首先检查是否已经连接
+                log('🔍 检查现有连接...');
+                const existingAccounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                if (existingAccounts.length > 0) {
+                    log(`✅ 发现已连接账户: ${existingAccounts[0]}`, 'success');
+                    connectedAccount = existingAccounts[0];
+                    await updateBalance();
+                    return;
+                }
+                
+                // 如果没有连接，尝试请求连接
+                log('🔄 请求新连接...');
+                log('💡 如果 MetaMask 没有弹出，请检查浏览器右上角是否有 MetaMask 图标闪烁');
+                
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+                
+                if (accounts.length > 0) {
+                    log(`🎉 连接成功: ${accounts[0]}`, 'success');
+                    connectedAccount = accounts[0];
+                    await updateBalance();
+                } else {
+                    log('❌ 没有获取到账户', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ 连接失败: ${error.message}`, 'error');
+                
+                if (error.code === 4001) {
+                    log('👆 用户拒绝了连接请求', 'warning');
+                    alert('您拒绝了连接请求。要使用此应用，请点击"智能连接"并在 MetaMask 中点击"连接"。');
+                } else if (error.message.includes('already pending')) {
+                    log('⚠️ 检测到待处理的请求', 'warning');
+                    alert('检测到 MetaMask 有待处理的请求！\\n\\n解决方法：\\n1. 打开 MetaMask 扩展\\n2. 处理或取消待处理的请求\\n3. 点击"强制刷新"按钮');
+                } else {
+                    log(`详细错误: ${JSON.stringify(error)}`, 'error');
+                    alert(`连接失败: ${error.message}\\n\\n请尝试:\\n1. 刷新页面\\n2. 重启浏览器\\n3. 重启 MetaMask`);
+                }
+            }
+        }
+        
+        // 强制刷新
+        function forceRefresh() {
+            log('🔄 强制刷新页面...', 'warning');
+            alert('页面将刷新以清除所有待处理的请求');
+            window.location.reload();
+        }
+        
+        // 发送测试交易
+        async function sendTestTransaction() {
+            if (!connectedAccount) {
+                log('❌ 请先连接账户', 'error');
+                return;
+            }
+            
+            log('=== 发送测试交易 ===');
+            
+            try {
+                log('📋 准备交易参数...');
+                const transactionParameters = {
+                    to: '0x742d35Cc6635C0532925a3b8D06080f0Ec0BAff5',
+                    from: connectedAccount,
+                    value: '0x2386F26FC10000', // 0.01 ETH
+                    gas: '0x5208', // 21000
+                };
+                
+                log(`📤 交易详情:`);
+                log(`   发送方: ${transactionParameters.from}`);
+                log(`   接收方: ${transactionParameters.to}`);
+                log(`   金额: 0.01 ETH`);
+                
+                log('🔔 正在打开 MetaMask 交易确认窗口...', 'info');
+                log('💡 请在 MetaMask 弹窗中确认交易', 'info');
+                
+                // 发送交易
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [transactionParameters],
+                });
+                
+                log(`🎉 交易已提交！`, 'success');
+                log(`📝 交易哈希: ${txHash}`, 'success');
+                
+                // 监控交易状态
+                log('⏳ 监控交易确认状态...');
+                monitorTransaction(txHash);
+                
+            } catch (error) {
+                log(`❌ 交易失败: ${error.message}`, 'error');
+                
+                if (error.code === 4001) {
+                    log('👆 用户取消了交易', 'warning');
+                } else if (error.code === -32603) {
+                    log('⚠️ 交易被拒绝，可能余额不足', 'warning');
+                } else {
+                    log(`详细错误: ${JSON.stringify(error)}`, 'error');
+                }
+            }
+        }
+        
+        // 监控交易
+        async function monitorTransaction(txHash) {
+            try {
+                const receipt = await window.ethereum.request({
+                    method: 'eth_getTransactionReceipt',
+                    params: [txHash]
+                });
+                
+                if (receipt) {
+                    if (receipt.status === '0x1') {
+                        log(`✅ 交易确认成功！`, 'success');
+                        log(`⛽ Gas 使用: ${parseInt(receipt.gasUsed, 16)}`);
+                        log(`🔗 区块号: ${parseInt(receipt.blockNumber, 16)}`);
+                    } else {
+                        log(`❌ 交易执行失败`, 'error');
+                    }
+                } else {
+                    log('⏳ 交易还在确认中，3秒后重新检查...', 'info');
+                    setTimeout(() => monitorTransaction(txHash), 3000);
+                }
+            } catch (error) {
+                log(`监控交易失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载时检查状态
+        window.addEventListener('load', async () => {
+            log('📱 页面加载完成');
+            await checkMetaMaskStatus();
+        });
+        
+        // 监听账户和网络变化
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                log(`🔄 账户变化: ${accounts.length} 个账户`);
+                if (accounts.length > 0) {
+                    connectedAccount = accounts[0];
+                    updateBalance();
+                } else {
+                    connectedAccount = null;
+                    updateStatus('未连接');
+                }
+            });
+            
+            window.ethereum.on('chainChanged', (chainId) => {
+                log(`🌐 网络变化: ${chainId}`);
+                log('🔄 页面将刷新以适应新网络', 'warning');
+                setTimeout(() => window.location.reload(), 2000);
+            });
+        }
+    </script>
+</body>
+</html>

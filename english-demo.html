@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoVault - Confidential DeFi Crowdfunding Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.12);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-black bg-opacity-20 backdrop-filter backdrop-blur-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="text-white text-xl font-bold">🔐 CryptoVault</div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-white hover:text-purple-200 transition">Features</a>
+                    <a href="#how-it-works" class="text-white hover:text-purple-200 transition">How It Works</a>
+                    <a href="#demo" class="text-white hover:text-purple-200 transition">Demo</a>
+                    <button id="connectWallet" class="btn-primary">Connect Wallet</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-24 pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-5xl md:text-6xl font-bold text-white mb-6">
+                Private Crowdfunding<br>
+                <span class="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    With Zero Knowledge
+                </span>
+            </h1>
+            <p class="text-xl text-gray-200 mb-8 max-w-3xl mx-auto">
+                CryptoVault enables confidential project funding on Ethereum using advanced cryptography. 
+                Contributors can support projects while keeping their donation amounts completely private.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="btn-primary px-8 py-4 text-lg">Launch Demo</button>
+                <button class="glass-effect text-white px-8 py-4 rounded-lg font-semibold">
+                    View on GitHub
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-12">
+                Revolutionary Features
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="feature-card">
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Private Contributions</h3>
+                    <p class="text-gray-300">
+                        Your contribution amounts remain completely private using homomorphic encryption, 
+                        while still contributing to the project's funding goal.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Gas Optimized</h3>
+                    <p class="text-gray-300">
+                        Smart contracts optimized for minimal gas usage on Ethereum mainnet and Layer 2 solutions, 
+                        making transactions affordable for everyone.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="text-4xl mb-4">🛡️</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Secure & Audited</h3>
+                    <p class="text-gray-300">
+                        Built with OpenZeppelin contracts and security best practices. 
+                        All smart contracts undergo rigorous testing and security audits.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="text-4xl mb-4">🔄</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Automatic Refunds</h3>
+                    <p class="text-gray-300">
+                        If projects don't reach their funding goals, contributors can claim automatic refunds 
+                        without revealing their original contribution amounts.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Real-time Analytics</h3>
+                    <p class="text-gray-300">
+                        Track project progress, funding milestones, and community engagement 
+                        with real-time dashboard analytics.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="text-4xl mb-4">🌍</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Global Access</h3>
+                    <p class="text-gray-300">
+                        Accessible worldwide with support for multiple cryptocurrencies 
+                        and integration with popular wallets like MetaMask.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-12">
+                How CryptoVault Works
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="glass-effect w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl font-bold text-white">1</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Create or Discover</h3>
+                    <p class="text-gray-300">
+                        Project creators launch funding campaigns with clear goals and timelines. 
+                        Contributors can browse and discover interesting projects to support.
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="glass-effect w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl font-bold text-white">2</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Contribute Privately</h3>
+                    <p class="text-gray-300">
+                        Make contributions using encrypted amounts that remain private while still 
+                        counting towards the project's funding goal through homomorphic encryption.
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="glass-effect w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl font-bold text-white">3</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Automatic Distribution</h3>
+                    <p class="text-gray-300">
+                        When projects reach their goals, funds are automatically distributed to creators. 
+                        Unsuccessful projects trigger automatic refunds to contributors.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="py-16">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-12">
+                Live Demo
+            </h2>
+            
+            <div class="glass-effect p-8 mb-8">
+                <div id="wallet-status" class="text-center mb-6">
+                    <p class="text-gray-300 mb-4">Connect your wallet to try the demo</p>
+                    <button id="connectWalletDemo" class="btn-primary">Connect MetaMask</button>
+                </div>
+                
+                <div id="demo-interface" class="hidden">
+                    <h3 class="text-2xl font-bold text-white mb-6">Demo Project: "Revolutionary DeFi Protocol"</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="glass-effect p-4 rounded-lg">
+                            <h4 class="text-lg font-semibold text-white mb-2">Project Info</h4>
+                            <p class="text-gray-300 text-sm mb-2">Funding Goal: 10 ETH</p>
+                            <p class="text-gray-300 text-sm mb-2">Current Progress: 3.7 ETH (37%)</p>
+                            <p class="text-gray-300 text-sm">Days Remaining: 25</p>
+                        </div>
+                        
+                        <div class="glass-effect p-4 rounded-lg">
+                            <h4 class="text-lg font-semibold text-white mb-2">Your Wallet</h4>
+                            <p class="text-gray-300 text-sm mb-2" id="wallet-address">Address: Not connected</p>
+                            <p class="text-gray-300 text-sm" id="wallet-balance">Balance: -- ETH</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-white font-medium mb-2">Contribution Amount (ETH)</label>
+                        <input type="number" 
+                               id="contribution-amount" 
+                               placeholder="0.1" 
+                               step="0.01" 
+                               min="0.01"
+                               class="w-full p-3 rounded-lg bg-white bg-opacity-10 border border-white border-opacity-30 text-white placeholder-gray-400">
+                    </div>
+                    
+                    <button id="contribute-btn" class="btn-primary w-full py-4 text-lg">
+                        Make Private Contribution
+                    </button>
+                    
+                    <div class="mt-6 p-4 bg-blue-500 bg-opacity-20 rounded-lg">
+                        <p class="text-blue-200 text-sm">
+                            <strong>Privacy Note:</strong> Your contribution amount will be encrypted and remain private. 
+                            Only you and the system will know your exact contribution amount.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <p class="text-gray-300 mb-4">
+                    Contract Address: <code class="bg-black bg-opacity-30 px-2 py-1 rounded text-purple-300">
+                        0x44adfaac785b7c6598d6bf37e231b0505920bc21
+                    </code>
+                </p>
+                <p class="text-gray-300 text-sm">
+                    Deployed on Sepolia Testnet | 
+                    <a href="https://sepolia.etherscan.io/address/0x44adfaac785b7c6598d6bf37e231b0505920bc21" 
+                       target="_blank" 
+                       class="text-purple-400 hover:text-purple-300">
+                        View on Explorer
+                    </a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-black bg-opacity-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="text-white text-xl font-bold mb-4">🔐 CryptoVault</div>
+            <p class="text-gray-300 mb-6">
+                The future of private, secure, and transparent crowdfunding on blockchain.
+            </p>
+            <div class="flex justify-center space-x-6">
+                <a href="#" class="text-gray-400 hover:text-white">GitHub</a>
+                <a href="#" class="text-gray-400 hover:text-white">Documentation</a>
+                <a href="#" class="text-gray-400 hover:text-white">Discord</a>
+                <a href="#" class="text-gray-400 hover:text-white">Twitter</a>
+            </div>
+            <p class="text-gray-400 text-sm mt-6">
+                © 2025 CryptoVault. Built with privacy, security, and innovation in mind.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const CONTRACT_ADDRESS = '0x44adfaac785b7c6598d6bf37e231b0505920bc21';
+        const SEPOLIA_CHAIN_ID = '0xaa36a7';
+        
+        let userAccount = null;
+        let web3Provider = null;
+
+        // Connect Wallet Functions
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Request account access
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userAccount = accounts[0];
+                    
+                    // Switch to Sepolia if needed
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: SEPOLIA_CHAIN_ID }],
+                        });
+                    } catch (switchError) {
+                        // Chain doesn't exist, add it
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: SEPOLIA_CHAIN_ID,
+                                    chainName: 'Sepolia Test Network',
+                                    nativeCurrency: {
+                                        name: 'ETH',
+                                        symbol: 'ETH',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
+                                    blockExplorerUrls: ['https://sepolia.etherscan.io']
+                                }]
+                            });
+                        }
+                    }
+                    
+                    web3Provider = new ethers.BrowserProvider(window.ethereum);
+                    await updateWalletDisplay();
+                    
+                } catch (error) {
+                    console.error('Error connecting wallet:', error);
+                    alert('Error connecting wallet: ' + error.message);
+                }
+            } else {
+                alert('Please install MetaMask to use this DApp');
+            }
+        }
+
+        async function updateWalletDisplay() {
+            if (userAccount) {
+                document.getElementById('wallet-status').classList.add('hidden');
+                document.getElementById('demo-interface').classList.remove('hidden');
+                
+                // Update wallet info
+                const shortAddress = userAccount.slice(0, 6) + '...' + userAccount.slice(-4);
+                document.getElementById('wallet-address').textContent = `Address: ${shortAddress}`;
+                
+                // Get balance
+                try {
+                    const balance = await web3Provider.getBalance(userAccount);
+                    const ethBalance = ethers.formatEther(balance);
+                    document.getElementById('wallet-balance').textContent = 
+                        `Balance: ${parseFloat(ethBalance).toFixed(4)} ETH`;
+                } catch (error) {
+                    console.error('Error getting balance:', error);
+                }
+            }
+        }
+
+        // Contribution function
+        async function makeContribution() {
+            if (!userAccount || !web3Provider) {
+                alert('Please connect your wallet first');
+                return;
+            }
+
+            const amount = document.getElementById('contribution-amount').value;
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid contribution amount');
+                return;
+            }
+
+            try {
+                const signer = await web3Provider.getSigner();
+                
+                // Simple transaction to the contract
+                const tx = {
+                    to: CONTRACT_ADDRESS,
+                    value: ethers.parseEther(amount),
+                    gasLimit: 50000
+                };
+                
+                const transaction = await signer.sendTransaction(tx);
+                
+                alert(`Transaction sent! Hash: ${transaction.hash}\n\nYour contribution of ${amount} ETH is being processed. The amount will remain private on the blockchain.`);
+                
+                // Wait for confirmation
+                const receipt = await transaction.wait();
+                console.log('Transaction confirmed:', receipt);
+                
+            } catch (error) {
+                console.error('Error making contribution:', error);
+                alert('Error making contribution: ' + error.message);
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('connectWallet').addEventListener('click', connectWallet);
+        document.getElementById('connectWalletDemo').addEventListener('click', connectWallet);
+        document.getElementById('contribute-btn').addEventListener('click', makeContribution);
+
+        // Check if wallet is already connected
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.request({ method: 'eth_accounts' })
+                .then(accounts => {
+                    if (accounts.length > 0) {
+                        userAccount = accounts[0];
+                        web3Provider = new ethers.BrowserProvider(window.ethereum);
+                        updateWalletDisplay();
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

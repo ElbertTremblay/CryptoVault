@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>强制清理MetaMask状态</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        button { background: #007bff; color: white; border: none; padding: 15px 25px; margin: 10px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        .log { background: #000; color: #00ff00; padding: 15px; border-radius: 5px; font-family: monospace; margin: 15px 0; max-height: 300px; overflow-y: auto; }
+        .alert { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .success { color: #155724; background: #d4edda; border-color: #c3e6cb; }
+        .error { color: #721c24; background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 MetaMask 状态强制清理工具</h1>
+        
+        <div class="alert">
+            <strong>⚠️ 当前问题：</strong> MetaMask 有待处理的权限请求<br>
+            <strong>📍 位置：</strong> http://localhost:3023<br>
+            <strong>🔄 状态：</strong> Request of type 'wallet_requestPermissions' already pending
+        </div>
+        
+        <div>
+            <h3>🛠️ 自动解决工具：</h3>
+            <button onclick="forceReload()">🔄 强制刷新页面</button>
+            <button onclick="clearStorage()">🧹 清理本地存储</button>
+            <button onclick="newTabTest()">🆕 新标签页测试</button>
+        </div>
+        
+        <div>
+            <h3>🔌 连接测试：</h3>
+            <button onclick="testConnection()">🔗 测试连接</button>
+            <button onclick="testTransaction()">💰 测试交易</button>
+        </div>
+        
+        <div class="alert">
+            <strong>📋 手动解决步骤：</strong><br>
+            1. 点击浏览器右上角 MetaMask 图标<br>
+            2. 如果看到连接请求，点击"取消"或"拒绝"<br>
+            3. 关闭所有 MetaMask 弹窗<br>
+            4. 点击下面的"测试连接"按钮
+        </div>
+        
+        <div class="log" id="log">等待操作...</div>
+    </div>
+
+    <script>
+        let account = null;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('log');
+            const color = type === 'error' ? '#ff4444' : 
+                         type === 'success' ? '#44ff44' : 
+                         type === 'warning' ? '#ffaa44' : '#00ff00';
+            logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        // 强制刷新页面
+        function forceReload() {
+            log('🔄 强制刷新页面，清理所有状态...', 'warning');
+            setTimeout(() => {
+                window.location.href = window.location.href + '?t=' + Date.now();
+            }, 1000);
+        }
+        
+        // 清理本地存储
+        function clearStorage() {
+            log('🧹 清理本地存储...', 'warning');
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                log('✅ 本地存储已清理');
+            } catch (error) {
+                log(`❌ 清理失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 新标签页测试
+        function newTabTest() {
+            log('🆕 在新标签页打开测试页面...', 'info');
+            const newWindow = window.open('about:blank', '_blank');
+            newWindow.document.write(\`
+                <!DOCTYPE html>
+                <html>
+                <head><title>新窗口MetaMask测试</title></head>
+                <body>
+                    <h1>新窗口 MetaMask 测试</h1>
+                    <button onclick="connect()">连接 MetaMask</button>
+                    <div id="result" style="margin: 20px; padding: 15px; background: #f0f0f0;"></div>
+                    
+                    <script>
+                        async function connect() {
+                            const result = document.getElementById('result');
+                            result.innerHTML = '正在连接...';
+                            
+                            if (!window.ethereum) {
+                                result.innerHTML = '❌ MetaMask 未安装';
+                                return;
+                            }
+                            
+                            try {
+                                const accounts = await window.ethereum.request({ 
+                                    method: 'eth_requestAccounts' 
+                                });
+                                result.innerHTML = \\\`✅ 连接成功！<br>账户: \\\${accounts[0]}\\\`;
+                            } catch (error) {
+                                result.innerHTML = \\\`❌ 连接失败: \\\${error.message}\\\`;
+                            }
+                        }
+                    </script>
+                </body>
+                </html>
+            \`);
+        }
+        
+        // 测试连接
+        async function testConnection() {
+            log('=== 开始连接测试 ===', 'info');
+            
+            if (!window.ethereum) {
+                log('❌ MetaMask 未检测到', 'error');
+                return;
+            }
+            
+            try {
+                // 先检查现有账户
+                log('🔍 检查现有连接...', 'info');
+                const existingAccounts = await window.ethereum.request({ 
+                    method: 'eth_accounts' 
+                });
+                
+                if (existingAccounts.length > 0) {
+                    log(\`✅ 发现已连接账户: \${existingAccounts[0]}\`, 'success');
+                    account = existingAccounts[0];
+                    return;
+                }
+                
+                // 请求新连接
+                log('🔄 请求新连接... (请查看MetaMask弹窗)', 'info');
+                log('💡 提示: 请点击浏览器右上角的MetaMask图标查看请求', 'warning');
+                
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                if (accounts && accounts.length > 0) {
+                    log(\`🎉 连接成功! 账户: \${accounts[0]}\`, 'success');
+                    account = accounts[0];
+                } else {
+                    log('❌ 未获取到账户', 'error');
+                }
+                
+            } catch (error) {
+                log(\`❌ 连接失败: \${error.message}\`, 'error');
+                
+                if (error.message.includes('already pending')) {
+                    log('🚨 仍有待处理请求！请按以下步骤操作：', 'warning');
+                    log('1. 点击浏览器右上角MetaMask图标', 'warning');
+                    log('2. 取消或处理待处理的请求', 'warning');
+                    log('3. 点击"强制刷新页面"按钮', 'warning');
+                }
+            }
+        }
+        
+        // 测试交易
+        async function testTransaction() {
+            if (!account) {
+                log('❌ 请先连接账户', 'error');
+                return;
+            }
+            
+            log('=== 开始交易测试 ===', 'info');
+            
+            try {
+                log('📋 准备交易参数...', 'info');
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: account,
+                        to: '0x742d35Cc6635C0532925a3b8D06080f0Ec0BAff5',
+                        value: '0x2386F26FC10000', // 0.01 ETH
+                        gas: '0x5208'
+                    }]
+                });
+                
+                log(\`🎉 交易提交成功! 哈希: \${txHash}\`, 'success');
+                
+            } catch (error) {
+                log(\`❌ 交易失败: \${error.message}\`, 'error');
+                
+                if (error.code === 4001) {
+                    log('👆 用户取消了交易', 'warning');
+                } else {
+                    log(\`详细错误: \${JSON.stringify(error)}\`, 'error');
+                }
+            }
+        }
+        
+        // 页面加载时的提示
+        window.addEventListener('load', () => {
+            log('🔧 MetaMask状态清理工具已加载', 'info');
+            log('💡 如果遇到"already pending"错误，请先处理MetaMask中的待处理请求', 'warning');
+        });
+    </script>
+</body>
+</html>

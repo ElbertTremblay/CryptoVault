@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MetaMask Clear Tool</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px; 
+            margin: 0;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            padding: 30px; 
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        button { 
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white; 
+            border: none; 
+            padding: 15px 25px; 
+            margin: 8px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+        .log { 
+            background: #000; 
+            color: #00ff00; 
+            padding: 20px; 
+            border-radius: 8px; 
+            font-family: 'Courier New', monospace; 
+            margin: 20px 0; 
+            max-height: 400px; 
+            overflow-y: auto; 
+        }
+        .alert { 
+            background: rgba(255,193,7,0.2); 
+            border: 2px solid #ffc107; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 15px 0; 
+            color: #fff;
+        }
+        .success { background: rgba(40,167,69,0.2); border-color: #28a745; }
+        .error { background: rgba(220,53,69,0.2); border-color: #dc3545; }
+        h2 { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 MetaMask Connection Fixer</h1>
+        
+        <div class="alert">
+            <strong>⚠️ Current Issue:</strong> MetaMask has a pending permission request<br>
+            <strong>🔄 Status:</strong> Request already pending for http://localhost:3023
+        </div>
+        
+        <h2>🛠️ Quick Fix Tools:</h2>
+        <button onclick="forceReload()">🔄 Force Page Reload</button>
+        <button onclick="clearStorage()">🧹 Clear Browser Storage</button>
+        <button onclick="openNewWindow()">🆕 Open New Window Test</button>
+        
+        <h2>🔌 Connection Tests:</h2>
+        <button onclick="testConnection()">🔗 Test Connection</button>
+        <button onclick="testTransaction()">💰 Test Transaction</button>
+        <button onclick="checkStatus()">📊 Check MetaMask Status</button>
+        
+        <div class="alert">
+            <strong>📋 Manual Steps:</strong><br>
+            1. Click MetaMask icon in browser toolbar<br>
+            2. If you see a connection request, click "Cancel" or "Reject"<br>
+            3. Close all MetaMask popups<br>
+            4. Click "Test Connection" below
+        </div>
+        
+        <div class="log" id="log">Waiting for action...</div>
+    </div>
+
+    <script>
+        let account = null;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('log');
+            const colors = {
+                'error': '#ff4444',
+                'success': '#44ff44', 
+                'warning': '#ffaa44',
+                'info': '#00ff00'
+            };
+            const color = colors[type] || '#00ff00';
+            logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        function forceReload() {
+            log('🔄 Force reloading page to clear all states...', 'warning');
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+        }
+        
+        function clearStorage() {
+            log('🧹 Clearing browser storage...', 'warning');
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                log('✅ Storage cleared successfully');
+                setTimeout(() => window.location.reload(), 2000);
+            } catch (error) {
+                log(`❌ Failed to clear storage: ${error.message}`, 'error');
+            }
+        }
+        
+        function openNewWindow() {
+            log('🆕 Opening new window for clean test...', 'info');
+            const newWin = window.open('', '_blank', 'width=600,height=400');
+            newWin.document.write(`
+                <html>
+                <head><title>Clean MetaMask Test</title></head>
+                <body style="font-family:Arial;padding:20px;background:#f0f0f0">
+                    <h2>🆕 Clean Window MetaMask Test</h2>
+                    <button onclick="connectClean()" style="padding:15px 25px;background:#007bff;color:white;border:none;border-radius:5px;font-size:16px;cursor:pointer">
+                        Connect MetaMask
+                    </button>
+                    <div id="result" style="margin-top:20px;padding:15px;background:white;border-radius:5px"></div>
+                    
+                    <script>
+                        async function connectClean() {
+                            const result = document.getElementById('result');
+                            result.innerHTML = '🔄 Connecting to MetaMask...';
+                            
+                            if (!window.ethereum) {
+                                result.innerHTML = '❌ MetaMask not detected!<br>Please install: <a href="https://metamask.io" target="_blank">https://metamask.io</a>';
+                                return;
+                            }
+                            
+                            try {
+                                console.log('Requesting MetaMask connection...');
+                                const accounts = await window.ethereum.request({ 
+                                    method: 'eth_requestAccounts' 
+                                });
+                                
+                                if (accounts && accounts.length > 0) {
+                                    result.innerHTML = '✅ Connection Successful!<br>Account: ' + accounts[0] + '<br><br>🎉 MetaMask popup worked!';
+                                } else {
+                                    result.innerHTML = '❌ No accounts returned';
+                                }
+                            } catch (error) {
+                                console.error('Connection failed:', error);
+                                result.innerHTML = '❌ Connection Failed: ' + error.message;
+                                
+                                if (error.message.includes('already pending')) {
+                                    result.innerHTML += '<br><br>⚠️ Still has pending request! Please:<br>1. Click MetaMask icon<br>2. Cancel pending request<br>3. Try again';
+                                }
+                            }
+                        }
+                    </script>
+                </body>
+                </html>
+            `);
+        }
+        
+        async function checkStatus() {
+            log('=== Checking MetaMask Status ===', 'info');
+            
+            if (!window.ethereum) {
+                log('❌ MetaMask not detected', 'error');
+                return;
+            }
+            
+            log('✅ MetaMask detected');
+            log(`Connected: ${window.ethereum.isConnected()}`);
+            log(`Is MetaMask: ${window.ethereum.isMetaMask}`);
+            log(`Network: ${window.ethereum.networkVersion || 'unknown'}`);
+            
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    log(`🔗 Already connected: ${accounts[0]}`, 'success');
+                    account = accounts[0];
+                } else {
+                    log('📝 No connected accounts', 'warning');
+                }
+            } catch (error) {
+                log(`❌ Failed to check accounts: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testConnection() {
+            log('=== Testing Connection ===', 'info');
+            
+            if (!window.ethereum) {
+                log('❌ MetaMask not detected', 'error');
+                return;
+            }
+            
+            try {
+                log('🔍 Checking existing connections...', 'info');
+                const existingAccounts = await window.ethereum.request({ 
+                    method: 'eth_accounts' 
+                });
+                
+                if (existingAccounts.length > 0) {
+                    log(`✅ Found connected account: ${existingAccounts[0]}`, 'success');
+                    account = existingAccounts[0];
+                    return;
+                }
+                
+                log('🔄 Requesting new connection...', 'info');
+                log('💡 Look for MetaMask popup or icon flashing in toolbar', 'warning');
+                
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                if (accounts && accounts.length > 0) {
+                    log(`🎉 Connection successful! Account: ${accounts[0]}`, 'success');
+                    account = accounts[0];
+                } else {
+                    log('❌ No accounts returned', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Connection failed: ${error.message}`, 'error');
+                
+                if (error.message.includes('already pending')) {
+                    log('🚨 STILL HAS PENDING REQUEST!', 'error');
+                    log('👆 SOLUTION:', 'warning');
+                    log('1. Click MetaMask browser icon NOW', 'warning');
+                    log('2. Cancel/Reject the pending request', 'warning');
+                    log('3. Click "Force Page Reload" button', 'warning');
+                } else if (error.code === 4001) {
+                    log('👆 User rejected the request', 'warning');
+                } else {
+                    log(`Detailed error: ${JSON.stringify(error)}`, 'error');
+                }
+            }
+        }
+        
+        async function testTransaction() {
+            if (!account) {
+                log('❌ Please connect account first', 'error');
+                return;
+            }
+            
+            log('=== Testing Transaction ===', 'info');
+            
+            try {
+                log('📋 Preparing transaction...', 'info');
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: account,
+                        to: '0x742d35Cc6635C0532925a3b8D06080f0Ec0BAff5',
+                        value: '0x2386F26FC10000', // 0.01 ETH
+                        gas: '0x5208'
+                    }]
+                });
+                
+                log(`🎉 Transaction successful! Hash: ${txHash}`, 'success');
+                
+            } catch (error) {
+                log(`❌ Transaction failed: ${error.message}`, 'error');
+                
+                if (error.code === 4001) {
+                    log('👆 User cancelled transaction', 'warning');
+                } else {
+                    log(`Detailed error: ${JSON.stringify(error)}`, 'error');
+                }
+            }
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('🔧 MetaMask Connection Fixer loaded', 'info');
+            log('💡 If you see "already pending" error, handle MetaMask pending requests first', 'warning');
+            setTimeout(checkStatus, 1000);
+        });
+    </script>
+</body>
+</html>

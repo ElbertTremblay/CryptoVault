@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>最简 MetaMask 测试</title>
+</head>
+<body>
+    <h1>最简 MetaMask 测试</h1>
+    <button onclick="connect()">连接 MetaMask</button>
+    <button onclick="send()">发送交易</button>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+    
+    <script>
+        let account = null;
+        
+        async function connect() {
+            console.log('开始连接...');
+            document.getElementById('result').innerHTML = '正在连接 MetaMask...';
+            
+            if (!window.ethereum) {
+                document.getElementById('result').innerHTML = '❌ MetaMask 未安装！<br>请访问：https://metamask.io';
+                return;
+            }
+            
+            try {
+                // 最简单的连接方式
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                document.getElementById('result').innerHTML = `✅ 连接成功！<br>账户：${account}`;
+                console.log('连接成功:', account);
+            } catch (error) {
+                console.error('连接失败:', error);
+                document.getElementById('result').innerHTML = `❌ 连接失败：${error.message}`;
+            }
+        }
+        
+        async function send() {
+            if (!account) {
+                document.getElementById('result').innerHTML = '请先连接账户';
+                return;
+            }
+            
+            console.log('开始发送交易...');
+            document.getElementById('result').innerHTML = '正在发送交易...';
+            
+            try {
+                const txHash = await ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: account,
+                        to: '0x742d35Cc6635C0532925a3b8D06080f0Ec0BAff5',
+                        value: '0x2386F26FC10000', // 0.01 ETH
+                        gas: '0x5208'
+                    }]
+                });
+                
+                document.getElementById('result').innerHTML = `✅ 交易已提交！<br>哈希：${txHash}`;
+                console.log('交易成功:', txHash);
+            } catch (error) {
+                console.error('交易失败:', error);
+                document.getElementById('result').innerHTML = `❌ 交易失败：${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
